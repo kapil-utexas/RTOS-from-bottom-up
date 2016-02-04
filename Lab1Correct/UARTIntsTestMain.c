@@ -29,6 +29,16 @@
 #include <stdint.h>
 #include "PLL.h"
 #include "UART.h"
+#include "OS.h"
+
+void dummy(void){}; //dummy function for user task
+
+int main()
+{
+	PLL_Init(Bus80MHz);       // set system clock to 80 MHz
+	OS_AddPeriodicThread(dummy, 1000, 2);
+ 
+}
 
 //---------------------OutCRLF---------------------
 // Output a CR,LF to UART to go to a new line
@@ -38,8 +48,10 @@ void OutCRLF(void){
   UART_OutChar(CR);
   UART_OutChar(LF);
 }
-//debug code
-int main(void){
+
+
+//debug code for UART
+int main2(void){
   char i;
   char string[20];  // global to assist in debugging
   uint32_t n;
