@@ -111,10 +111,8 @@ static unsigned int currentChannel;
 
 void ADC_Open(unsigned int channelNum)
 {
-	//Should we take care of critical sections? If so, how? Disable timer? Disable interrupts?
-	  volatile uint32_t delay;
-		//DisableInterrupts();
-		currentChannel = channelNum;
+	volatile uint32_t delay;
+	currentChannel = channelNum;
   // **** GPIO pin initialization ****
   switch(channelNum){             // 1) activate clock
     case 0:
@@ -218,7 +216,6 @@ void ADC_Open(unsigned int channelNum)
 
 void ADC0_InitTimer0ATriggerSeq3(uint8_t channelNum, uint32_t period){
 	volatile uint32_t delay;
-  DisableInterrupts();
   SYSCTL_RCGCADC_R |= 0x01;     // activate ADC0 
   SYSCTL_RCGCTIMER_R |= 0x01;   // activate timer0 
   delay = SYSCTL_RCGCTIMER_R;   // allow time to finish activating

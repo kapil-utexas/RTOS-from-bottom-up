@@ -1554,11 +1554,11 @@ void ST7735_OutChar(char ch){
     ST7735_DrawString(0,StY,"                     ",StTextColor);
     return;
   }
-  ST7735_DrawCharS(StX*6,StY*10,ch,ST7735_YELLOW,ST7735_BLACK, 1);
+  ST7735_DrawCharS(StX*6,StY*10,ch,ST7735_YELLOW,ST7735_YELLOW, 1);
   StX++;
   if(StX>20){
     StX = 20;
-    ST7735_DrawCharS(StX*6,StY*10,'*',ST7735_RED,ST7735_BLACK, 1);
+    ST7735_DrawCharS(StX*6,StY*10,'*',ST7735_RED,ST7735_YELLOW, 1);
   }
   return;
 }

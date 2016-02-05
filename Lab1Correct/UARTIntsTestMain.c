@@ -28,16 +28,28 @@
 
 #include <stdint.h>
 #include "PLL.h"
+#include "ADC.h"
 #include "UART.h"
 #include "OS.h"
-
+#include "ST7735.h"
+void EnableInterrupts(void);  // Enable interrupts
 void dummy(void){}; //dummy function for user task
 
 int main()
 {
-	PLL_Init(Bus80MHz);       // set system clock to 80 MHz
-	OS_AddPeriodicThread(dummy, 1000, 2);
- 
+	uint32_t adcSample;
+  PLL_Init(Bus80MHz);                  // set system clock to 80 MHz
+  ST7735_InitR(INITR_REDTAB);
+	//ST7735_Message (1, 2, "HI", 3);
+  ADC0_InitTimer0ATriggerSeq3(0,800000);
+	ADC_Open(2);
+	EnableInterrupts();
+	while(1){
+		adcSample = ADC_In();
+		ST7735_SetCursor(0,0);
+		ST7735_OutUDec(adcSample);
+	
+	}
 }
 
 //---------------------OutCRLF---------------------
