@@ -3,16 +3,22 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-C:\RTOS-from-bottom-up\Lab1Correct\UARTInts.uvproj
-Project File Date:  02/03/2016
+C:\EE445M\Lab1Correct\UARTInts.uvproj
+Project File Date:  02/05/2016
 
 <h2>Output:</h2>
-Build target 'UARTInts'
+Rebuild target 'UARTInts'
+assembling startup.s...
+compiling PLL.c...
 compiling UARTIntsTestMain.c...
+compiling UART.c...
+compiling OS.c...
+compiling ST7735.c...
+compiling ADC.c...
 linking...
-Program Size: Code=4424 RO-data=2052 RW-data=80 ZI-data=1168  
+Program Size: Code=5656 RO-data=2052 RW-data=80 ZI-data=1152  
 ".\UARTInts.axf" - 0 Error(s), 0 Warning(s).
-Load "C:\\RTOS-from-bottom-up\\Lab1Correct\\UARTInts.axf" 
+Load "C:\\EE445M\\Lab1Correct\\UARTInts.axf" 
 Connecting: Mode=JTAG, Speed=1000000Hz
 Erase Done.
 Programming Done.
@@ -20,17 +26,78 @@ Verify OK.
 </pre>
 </body>
 </html>
-ct\\UARTInts.axf" 
+ Error(s), 1 Warning(s).
+Load "C:\\EE445M\\Lab1Correct\\UARTInts.axf" 
 Connecting: Mode=JTAG, Speed=1000000Hz
 Erase Done.
 Programming Done.
 Verify OK.
-, 1 Warning(s).
-...
+ier
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #147: declaration is incompatible with "void UART_OutString(char *)" (declared at line 60 of "UART.h")
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #92: identifier-list parameters may only be used in a function definition
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): warning:  #1295-D: Deprecated declaration OutCRLF - give arg types
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(144): error:  #147: declaration is incompatible with "void OutCRLF(void)" (declared at line 45)
+      UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
+UARTIntsTestMain.c(146): error:  #79: expected a type specifier
+      UART_OutString("InUDec: ");  n=UART_InUDec();
+UARTIntsTestMain.c(146): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString("InUDec: ");  n=UART_InUDec();
+UARTIntsTestMain.c(146): error:  #77-D: this declaration has no storage class or type specifier
+      UART_OutString("InUDec: ");  n=UART_InUDec();
+UARTIntsTestMain.c(146): error:  #59: function call is not allowed in a constant expression
+      UART_OutString("InUDec: ");  n=UART_InUDec();
+UARTIntsTestMain.c(147): error:  #79: expected a type specifier
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): error:  #92: identifier-list parameters may only be used in a function definition
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): error:  #147: declaration is incompatible with "void UART_OutUDec(uint32_t)" (declared at line 77 of "UART.h")
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): warning:  #1295-D: Deprecated declaration OutCRLF - give arg types
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(147): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
+UARTIntsTestMain.c(149): error:  #79: expected a type specifier
+      UART_OutString("InUHex: ");  n=UART_InUHex();
+UARTIntsTestMain.c(149): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString("InUHex: ");  n=UART_InUHex();
+UARTIntsTestMain.c(149): error:  #77-D: this declaration has no storage class or type specifier
+      UART_OutString("InUHex: ");  n=UART_InUHex();
+UARTIntsTestMain.c(149): error:  #148: variable "n" has already been initialized
+      UART_OutString("InUHex: ");  n=UART_InUHex();
+UARTIntsTestMain.c(149): error:  #59: function call is not allowed in a constant expression
+      UART_OutString("InUHex: ");  n=UART_InUHex();
+UARTIntsTestMain.c(150): error:  #79: expected a type specifier
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): error:  #92: identifier-list parameters may only be used in a function definition
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): error:  #147: declaration is incompatible with "void UART_OutUHex(uint32_t)" (declared at line 96 of "UART.h")
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): warning:  #1295-D: Deprecated declaration OutCRLF - give arg types
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c(150): error:  #260-D: explicit type is missing ("int" assumed)
+      UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
+UARTIntsTestMain.c: 5 warnings, 30 errors
+compiling UART.c...
+compiling OS.c...
+compiling ST7735.c...
 compiling ADC.c...
-linking...
-Program Size: Code=4408 RO-data=2052 RW-data=80 ZI-data=1152  
-".\UARTInts.axf" - 0 Error(s), 2 Warning(s).
- information, 0 warning and 1 error messages.
-".\UARTInts.axf" - 1 Error(s), 2 Warning(s).
+".\UARTInts.axf" - 30 Error(s), 5 Warning(s).
 Target not created

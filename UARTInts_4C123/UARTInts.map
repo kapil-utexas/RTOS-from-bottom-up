@@ -678,13 +678,13 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       124          6          0          0          0       4611   pll.o
-       692        632          0          0       1024        876   startup.o
-      1180        140          0         16         32       9590   uart.o
-       264         74          0          0          0       1005   uartintstestmain.o
+       124          6          0          0          0       4599   pll.o
+       692        632          0          0       1024        844   startup.o
+      1180        140          0         16         32       9310   uart.o
+       264         74          0          0          0        977   uartintstestmain.o
 
     ----------------------------------------------------------------------
-      2266        852         32         16       1056      16082   Object Totals
+      2266        852         32         16       1056      15730   Object Totals
          0          0         32          0          0          0   (incl. Generated)
          6          0          0          0          0          0   (incl. Padding)
 
@@ -733,8 +733,8 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-      2536        868         32         16       1152      15254   Grand Totals
-      2536        868         32         16       1152      15254   ELF Image Totals
+      2536        868         32         16       1152      14902   Grand Totals
+      2536        868         32         16       1152      14902   ELF Image Totals
       2536        868         32         16          0          0   ROM Totals
 
 ==============================================================================

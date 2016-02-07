@@ -79,9 +79,9 @@ void UART_Init(void){
   RxFifo_Init();                        // initialize empty FIFOs
   TxFifo_Init();
   UART0_CTL_R &= ~UART_CTL_UARTEN;      // disable UART
-  UART0_IBRD_R = 27;                    // IBRD = int(50,000,000 / (16 * 115,200)) = int(27.1267)
-  UART0_FBRD_R = 8;                     // FBRD = int(0.1267 * 64 + 0.5) = 8
-                                        // 8 bit word length (no parity bits, one stop bit, FIFOs)
+	UART0_IBRD_R = 43;                    // IBRD = int(80,000,000 / (16 * 115,200)) = int(43.4028)
+  UART0_FBRD_R = 26;                     // FBRD = int(0.4028 * 64 + 0.5) = 26
+                                          // 8 bit word length (no parity bits, one stop bit, FIFOs)
   UART0_LCRH_R = (UART_LCRH_WLEN_8|UART_LCRH_FEN);
   UART0_IFLS_R &= ~0x3F;                // clear TX and RX interrupt FIFO level fields
                                         // configure interrupt for TX FIFO <= 1/8 full
@@ -98,7 +98,6 @@ void UART_Init(void){
                                         // UART0=priority 2
   NVIC_PRI1_R = (NVIC_PRI1_R&0xFFFF00FF)|0x00004000; // bits 13-15
   NVIC_EN0_R = NVIC_EN0_INT5;           // enable interrupt 5 in NVIC
-  EnableInterrupts();
 }
 // copy from hardware RX FIFO to software RX FIFO
 // stop when hardware RX FIFO is empty or software RX FIFO is full

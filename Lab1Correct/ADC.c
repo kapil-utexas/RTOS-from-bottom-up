@@ -247,7 +247,6 @@ unsigned short ADC_In(void){
 		return ADCvalue; //return most recent sample
 }
 
-volatile uint32_t ADCvalue;
 void ADC0Seq3_Handler(void){
   ADC0_ISC_R = 0x08;          // acknowledge ADC sequence 3 completion
   ADCvalue = ADC0_SSFIFO3_R;  // 12-bit result

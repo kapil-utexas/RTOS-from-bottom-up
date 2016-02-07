@@ -44,7 +44,7 @@ int main(void){
   char string[20];  // global to assist in debugging
   uint32_t n;
 
-  PLL_Init(Bus50MHz);       // set system clock to 50 MHz
+  PLL_Init(Bus80MHz);       // set system clock to 50 MHz
   UART_Init();              // initialize UART
   OutCRLF();
   for(i='A'; i<='Z'; i=i+1){// print the uppercase alphabet
