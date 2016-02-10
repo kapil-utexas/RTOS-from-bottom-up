@@ -71,8 +71,10 @@ long StartCritical (void);    // previous I bit, disable interrupts
 void EndCritical(long sr);    // restore I bit to previous value
 void WaitForInterrupt(void);  // low power mode
 
+
 //Global variables
 static unsigned int currentChannel;
+void(*producerFunction)(unsigned long data);
 
 // There are many choices to make when using the ADC, and many
 // different combinations of settings will all do basically the
@@ -214,7 +216,7 @@ void ADC_Open(unsigned int channelNum)
 
 }	
 
-void ADC0_InitTimer0ATriggerSeq3(uint8_t channelNum, uint32_t period){
+void ADC_Init(uint8_t channelNum){
 	volatile uint32_t delay;
   SYSCTL_RCGCADC_R |= 0x01;     // activate ADC0 
   SYSCTL_RCGCTIMER_R |= 0x01;   // activate timer0 
@@ -224,7 +226,7 @@ void ADC0_InitTimer0ATriggerSeq3(uint8_t channelNum, uint32_t period){
   TIMER0_CFG_R = 4;             // configure for 16-bit timer mode-- changed from 32 to 16 bit (for 32 bit use 0)
   TIMER0_TAMR_R = 0x00000002;   // configure for periodic mode, default down-count settings
   TIMER0_TAPR_R = 0;            // prescale value for trigger
-  TIMER0_TAILR_R = period-1;    // start value for trigger
+  TIMER0_TAILR_R = 80000000;    // start value for trigger
   TIMER0_IMR_R = 0x00000000;    // disable all interrupts
   TIMER0_CTL_R |= 0x00000001;   // enable timer0A 32-b, periodic, no interrupts
   ADC0_PC_R = 0x01;         // configure for 125K samples/sec
@@ -250,19 +252,16 @@ unsigned short ADC_In(void){
 void ADC0Seq3_Handler(void){
   ADC0_ISC_R = 0x08;          // acknowledge ADC sequence 3 completion
   ADCvalue = ADC0_SSFIFO3_R;  // 12-bit result
+	producerFunction(ADCvalue);
 	done = 1; //sample done
 }
 
-int ADC_Collect(unsigned int channelNum, unsigned int period,unsigned short buffer[], unsigned int numberOfSamples){
-	int sampleCounter = 0;
+int ADC_Collect(unsigned int channelNum, unsigned int period, void(*task)(unsigned long data)){
 	ADC_Open(channelNum);
 	TIMER0_CTL_R = 0x00000000;    // disable timer0A during setup
+	period = 1000 * (80000/period);
 	TIMER0_TAILR_R = period-1;    // start value for trigger
 	TIMER0_CTL_R |= 0x00000001;   // enable timer0A 16-b, periodic, no interrupts
-	//ask if this is correct setup. what about timer value? roll over
-	while(sampleCounter < numberOfSamples)
-	{
-		buffer[sampleCounter++] = ADC_In();
-	}
+	producerFunction = task;
 	return 0;
 }	

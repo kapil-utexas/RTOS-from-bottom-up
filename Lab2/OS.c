@@ -9,14 +9,50 @@
 #include <stdint.h>
 #include "../inc/tm4c123gh6pm.h"
 #include "OS.h"
+#include "PLL.h"
+#include "ST7735.h"
+#include "UART.h"
+#include "ADC.h"
 
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
+#define NUMBEROFTHREADS 3
 
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
-void DisableInterrupts(void); // Disable interrupts
-void EnableInterrupts(void);  // Enable interrupts
+
+//OSasm definitions
+void OS_DisableInterrupts(void); // Disable interrupts
+void OS_EnableInterrupts(void);  // Enable interrupts
+void StartOS(void);
+// ******** OS_Init ************
+// initialize operating system, disable interrupts until OS_Launch
+// initialize OS controlled I/O: serial, ADC, systick, LaunchPad I/O and timers 
+// input:  none
+// output: none
+void OS_Init()
+{
+	OS_DisableInterrupts();
+	PLL_Init(Bus80MHz);
+	//ST7735_InitR(INITR_REDTAB);				   // initialize LCD
+	//ADC_Init(0);
+	//UART_Init();              					 // initialize UART
+	//NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
+  //NVIC_ST_CURRENT_R = 0;      // any write to current clears it
+  //NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
+}
+//******** OS_Launch *************** 
+// start the scheduler, enable interrupts
+// Inputs: number of 12.5ns clock cycles for each time slice
+//         you may select the units of this parameter
+// Outputs: none (does not return)
+// In Lab 2, you can ignore the theTimeSlice field
+// In Lab 3, you should implement the user-defined TimeSlice field
+// It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
+void OS_Launch(unsigned long theTimeSlice){
+	StartOS();
+	while(1);
+}
 
 static void Timer1A_Init(unsigned long period){
 	volatile uint32_t delay;
@@ -74,16 +110,38 @@ void Timer1A_Handler(){
 	taskToDo();
 }
 
-struct TCB {
-	uint32_t * SP; //local stack pointer
+
+struct TCB{
+	uint32_t * localSp; //local stack pointer
 	struct TCB * nextTCB; //pointer to next TCB
-	uint32_t stack [STACKSIZE];
+	uint32_t stack [128];
 	uint32_t id; //unique id
 	uint8_t sleepState; //flag
 	uint8_t priority; 
 	uint8_t blockedState; //flag
 };
 
+  struct TCB * RunPt;
+	struct TCB threadPool[NUMBEROFTHREADS];
+
+void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
+	(*toFix).localSp = (*toFix).stack + stackSize - 16; //point to the bottom of the new stack
+	(*toFix).stack[stackSize - 1] = 0x01000000; //thumb bit
+	(*toFix).stack[stackSize - 3] = 0x14141414; //R14 
+	(*toFix).stack[stackSize - 4] = 0x12121212; //R12
+	(*toFix).stack[stackSize - 5] = 0x03030303; //R3
+	(*toFix).stack[stackSize - 6] = 0x02020202; //R2
+	(*toFix).stack[stackSize - 7] = 0x01010101; //R1
+	(*toFix).stack[stackSize - 8] = 0x00000000; //R0
+	(*toFix).stack[stackSize - 9] = 0x11111111; //R11
+	(*toFix).stack[stackSize - 10]= 0x10101010; //R10
+	(*toFix).stack[stackSize - 11]= 0x09090909; //R9
+	(*toFix).stack[stackSize - 12]= 0x08080808; //R8
+	(*toFix).stack[stackSize - 13]= 0x07070707; //R7
+	(*toFix).stack[stackSize - 14]= 0x06060606; //R6
+	(*toFix).stack[stackSize - 15]= 0x05050505; //R5
+	(*toFix).stack[stackSize - 16]= 0x04040404; //R4
+}
 //******** OS_AddThread *************** 
 // add a foregound thread to the scheduler
 // Inputs: pointer to a void/void foreground task
@@ -93,22 +151,19 @@ struct TCB {
 // stack size must be divisable by 8 (aligned to double word boundary)
 // In Lab 2, you can ignore both the stackSize and priority fields
 // In Lab 3, you can ignore the stackSize fields
+uint8_t uniqueId=0; //make unique ids
 int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long priority)
 {
-	static uint8_t uniqueId=0; //make unique ids
-	struct TCB newTCB = {
-	.stack = {0}, //possible bug
-	.SP = 0, //local stack pointer
-	.previousTCB = 0, //pointer to previous TCB
-	.nextTCB = 0, //pointer to next TCB
-	.id = uniqueId++, //unique id
-	.sleepState = 0, //flag
-	.priority = priority, 
-	.blockedState = 0 //flag
-	};
-	newTCB.SP = newTCB.stack + (stackSize - 1); //point to the bottom of the new stack
-	
-	return 0;
+	threadPool[uniqueId].nextTCB = &threadPool[(uniqueId + 1) % NUMBEROFTHREADS ]; //address of next TCB
+	threadPool[uniqueId].id = uniqueId; //unique id
+	threadPool[uniqueId].sleepState = 0; //flag
+	threadPool[uniqueId].priority = priority; 
+	threadPool[uniqueId].blockedState = 0; //flag
+	SetInitialStack(&threadPool[uniqueId], stackSize);
+	threadPool[uniqueId].stack[stackSize - 2] = (int32_t)task;
+	RunPt = &threadPool[uniqueId];
+	uniqueId++;
+	return 1;
 }
 
 // ******** OS_Suspend ************
@@ -119,5 +174,5 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 // input:  none
 // output: none
 void OS_Suspend(){
-	
+		NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
 }

@@ -1602,7 +1602,7 @@ int ferror(FILE *f){
 // Volume 2 section 3.4.5
 
 // *************** Output_Init ********************
-// Standard device driver initialization function for printf
+// Standard device driver initialization function for print
 // Initialize ST7735 LCD
 // Inputs: none
 // Outputs: none

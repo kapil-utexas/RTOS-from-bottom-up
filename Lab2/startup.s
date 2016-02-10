@@ -636,27 +636,6 @@ WaitForInterrupt
         WFI
         BX     LR
 
-;******This code was written to implement the OS by Kapil and Ramon************
-
-ContextSwitch
-		CPSID I
-		;we can assume that R0-R3, R12, LR, PC, PSRX are in stack because of interrupt
-		PUSH{R4-R11} ;push remaining registers
-		LDR R0, =RunPt ;old run pointer
-		LDR R1, [R0] ;now R1 points the the current TCB running
-					 ;this means R1 = TCB.localSP 	
-		STR SP, [R1] ;store stack into local stack pointer of TCB
-		LDR R0, [R1,#4] 
-		LDR R1, [R0] ;R1 points to the first element of the struct we want to switch to
-		LDR SP, [R1] ; SP = new stack pointer
-		POP {R4-R11} ;pop remainining registers
-		CPSIE I
-		BX LR
-
-
-
-;******************************************************************************
-
 ;******************************************************************************
 ;
 ; The function expected of the C library startup code for defining the stack
