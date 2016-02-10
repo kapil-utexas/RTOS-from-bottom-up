@@ -75,10 +75,9 @@ void Timer1A_Handler(){
 }
 
 struct TCB {
-	uint32_t stack [STACKSIZE];
 	uint32_t * SP; //local stack pointer
-	struct TCB * previousTCB; //pointer to previous TCB
 	struct TCB * nextTCB; //pointer to next TCB
+	uint32_t stack [STACKSIZE];
 	uint32_t id; //unique id
 	uint8_t sleepState; //flag
 	uint8_t priority; 
@@ -107,7 +106,18 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	.priority = priority, 
 	.blockedState = 0 //flag
 	};
-	newTCB.SP = newTCB.stack + stackSize - 1;
+	newTCB.SP = newTCB.stack + (stackSize - 1); //point to the bottom of the new stack
 	
 	return 0;
+}
+
+// ******** OS_Suspend ************
+// suspend execution of currently running thread
+// scheduler will choose another thread to execute
+// Can be used to implement cooperative multitasking 
+// Same function as OS_Sleep(0)
+// input:  none
+// output: none
+void OS_Suspend(){
+	
 }
