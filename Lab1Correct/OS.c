@@ -11,6 +11,7 @@
 #include "OS.h"
 
 #define MILLISECONDCOUNT 80000
+#define PE1  (*((volatile unsigned long *)0x40024008))
 
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
@@ -67,8 +68,12 @@ unsigned long OS_ReadPeriodicTime(){
 }
 
 void Timer1A_Handler(){
+	PE1 ^= 0x02;       // heartbeat
+  PE1 ^= 0x02;       // heartbeat	
 	TIMER1_ICR_R = TIMER_ICR_TATOCINT;  // acknowledge timer1A timeout
 	timerCounter++;
 	//call the task set at initialization
 	taskToDo();
+	PE1 ^= 0x02;       // heartbeat
 }
+	

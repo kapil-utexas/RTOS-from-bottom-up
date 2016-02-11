@@ -33,6 +33,8 @@
 #include "UART.h"
 #include "OS.h"
 #include "ST7735.h"
+#include "inc/tm4c123gh6pm.h"
+
 #define MESSAGELENGTH 20
 
 void EnableInterrupts(void);  // Enable interrupts
@@ -52,6 +54,19 @@ void LCD_test(uint8_t device, char * message)
 {
 	ST7735_Message (device, 0, message, strlen(message));
 }
+
+void PortE_Init(void){ unsigned long volatile delay;
+  SYSCTL_RCGC2_R |= 0x10;       // activate port E
+  delay = SYSCTL_RCGC2_R;        
+  delay = SYSCTL_RCGC2_R;         
+  GPIO_PORTE_DIR_R |= 0x0F;    // make PE3-0 output heartbeats
+  GPIO_PORTE_AFSEL_R &= ~0x0F;   // disable alt funct on PE3-0
+  GPIO_PORTE_DEN_R |= 0x0F;     // enable digital I/O on PE3-0
+  GPIO_PORTE_PCTL_R = ~0x0000FFFF;
+  GPIO_PORTE_AMSEL_R &= ~0x0F;;      // disable analog functionality on PF
+}
+
+
 int main()
 {
 	uint32_t stringSize;
@@ -60,6 +75,7 @@ int main()
 	uint8_t taskAddedBefore = 0;
 	char message[MESSAGELENGTH] = "";
   PLL_Init(Bus80MHz);                  // set system clock to 80 MHz
+	PortE_Init();
   ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 	ADC0_InitTimer0ATriggerSeq3(0,800000);
 	UART_Init();              					 // initialize UART
@@ -98,7 +114,7 @@ int main()
 				break;
 			case 2:
 				if(!taskAddedBefore){
-					OS_AddPeriodicThread(dummy, 1000, 1);
+					OS_AddPeriodicThread(dummy, 5, 1);
 					taskAddedBefore = 1;
 				}
 				OutCRLF();

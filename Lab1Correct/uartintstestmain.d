@@ -6,3 +6,4 @@
 .\uartintstestmain.o: UART.h
 .\uartintstestmain.o: OS.h
 .\uartintstestmain.o: ST7735.h
+.\uartintstestmain.o: ..\inc/tm4c123gh6pm.h
