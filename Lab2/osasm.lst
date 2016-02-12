@@ -42,33 +42,39 @@ ARM Macro Assembler    Page 1
    32 00000008         StartOS
    33 00000008 480F            LDR              R0, =RunPt
    34 0000000A 6802            LDR              R2, [R0]
-   35 0000000C F8D2 D000       LDR              SP, [R2]
+   35 0000000C F8D2 D000       LDR              SP, [R2]    ;load localSP
    36 00000010 E8BD 0FF0       POP              {R4-R11}
    37 00000014 BC0F            POP              {R0-R3}
    38 00000016 F85D CB04       POP              {R12}
-   39 0000001A F85D EB04       POP              {LR}
-   40 0000001E F85D EB04       POP              {LR}        ;PC!
+   39 0000001A F85D EB04       POP              {LR}        ;trash LR
+   40 0000001E F85D EB04       POP              {LR}        ;PC on stack. the o
+                                                            nly register that i
+                                                            s not trash. points
+                                                             to function that w
+                                                            e want to run
    41 00000022 BC02            POP              {R1}        ;discards last one 
                                                             PSR
    42 00000024 B662            CPSIE            I
-   43 00000026 4770            BX               LR
+   43 00000026 4770            BX               LR          ;LR contains the PC
+                                                             we want to return 
+                                                            to
    44 00000028         
    45 00000028         
    46 00000028         
    47 00000028         PendSV_Handler                       ; 1) Saves R0-R3,R1
                                                             2,LR,PC,PSR
-   48 00000028 B672            CPSID            I
-   49 0000002A         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
-                       k because of interrupt
-   50 0000002A E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
-                                                            isters
-   51 0000002E 4806            LDR              R0, =RunPt  ;old run pointer
 
 
 
 ARM Macro Assembler    Page 2 
 
 
+   48 00000028 B672            CPSID            I
+   49 0000002A         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
+                       k because of interrupt
+   50 0000002A E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
+                                                            isters
+   51 0000002E 4806            LDR              R0, =RunPt  ;old run pointer
    52 00000030 6801            LDR              R1, [R0]    ;now R1 points the 
                                                             the current TCB run
                                                             ning
@@ -92,7 +98,7 @@ ARM Macro Assembler    Page 2
               00000000 
 Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\osasm.
 d -o.\osasm.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC:\Keil\ARM\
-Inc\Luminary --list=.\osasm.lst OSasm.s
+Inc\Luminary --predefine="__EVAL SETA 1" --list=.\osasm.lst OSasm.s
 
 
 
@@ -156,4 +162,4 @@ Symbol: RunPt
       At line 51 in file OSasm.s
 
 1 symbol
-338 symbols in table
+339 symbols in table

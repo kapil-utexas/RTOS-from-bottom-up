@@ -98,7 +98,7 @@ void Thread2(void){
   Count2 = 0;          
   for(;;){
     PE1 ^= 0x02;       // heartbeat
-    //Count2++;
+    Count2++;
     OS_Suspend();      // cooperative multitasking
   }
 }

@@ -3,30 +3,14 @@
 // Provide a function that initializes Timer0A to trigger ADC
 // SS3 conversions and request an interrupt when the conversion
 // is complete.
-// Daniel Valvano
-// May 2, 2015
+// Ramon and Kapil
+// February, 12. 2016
 
-/* This example accompanies the book
-   "Embedded Systems: Real Time Interfacing to Arm Cortex M Microcontrollers",
-   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2015
-
- Copyright 2015 by Jonathan W. Valvano, valvano@mail.utexas.edu
-    You may use, edit, run or distribute this file
-    as long as the above copyright notice remains
- THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
- OR STATUTORY, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
- MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE.
- VALVANO SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL,
- OR CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
- For more information about my classes, my research, and my books, see
- http://users.ece.utexas.edu/~valvano/
- */
 #include <stdint.h>
 #include "ADC.h"
 #include "../inc/tm4c123gh6pm.h"
 
 #define NVIC_EN0_INT17          0x00020000  // Interrupt 17 enable
-
 #define TIMER_CFG_16_BIT        0x00000004  // 16-bit timer configuration,
                                             // function is controlled by bits
                                             // 1:0 of GPTMTAMR and GPTMTBMR
@@ -109,6 +93,7 @@ static unsigned int currentChannel;
 // SS3 1st sample source: programmable using variable 'channelNum' [0:11]
 // SS3 interrupts: enabled and promoted to controller
 
+//Opens the channel number to sample for the ADC
 void ADC_Open(unsigned int channelNum)
 {
 	volatile uint32_t delay;
@@ -214,6 +199,7 @@ void ADC_Open(unsigned int channelNum)
 
 }	
 
+//Initialize the ADC and timer
 void ADC0_InitTimer0ATriggerSeq3(uint8_t channelNum, uint32_t period){
 	volatile uint32_t delay;
   SYSCTL_RCGCADC_R |= 0x01;     // activate ADC0 
@@ -241,6 +227,7 @@ void ADC0_InitTimer0ATriggerSeq3(uint8_t channelNum, uint32_t period){
 }
 volatile unsigned int done;
 volatile uint32_t ADCvalue;
+//Takes one sample from the channel selected by ADC_Open
 unsigned short ADC_In(void){
 		done = 0; 
 		while(done == 0){}; //wait until a sample has finished
@@ -253,6 +240,8 @@ void ADC0Seq3_Handler(void){
 	done = 1; //sample done
 }
 
+//Take n = numberOfSamples samples, using the channel specified and the frequency specified. 
+//Will store in the buffer passed as a parameter.
 int ADC_Collect(unsigned int channelNum, unsigned int period,unsigned short buffer[], unsigned int numberOfSamples){
 	int sampleCounter = 0;
 	ADC_Open(channelNum);

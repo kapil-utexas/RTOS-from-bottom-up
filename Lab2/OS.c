@@ -21,6 +21,20 @@
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
 
+struct TCB{
+	uint32_t * localSp; //local stack pointer
+	struct TCB * nextTCB; //pointer to next TCB
+	uint32_t stack [128];
+	uint32_t id; //unique id
+	uint8_t sleepState; //flag
+	uint8_t priority; 
+	uint8_t blockedState; //flag
+};
+
+
+struct TCB * RunPt;
+struct TCB threadPool[NUMBEROFTHREADS];
+
 //OSasm definitions
 void OS_DisableInterrupts(void); // Disable interrupts
 void OS_EnableInterrupts(void);  // Enable interrupts
@@ -50,6 +64,7 @@ void OS_Init()
 // In Lab 3, you should implement the user-defined TimeSlice field
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
+	RunPt = &threadPool[0]; //make the first thread active
 	StartOS();
 	while(1);
 }
@@ -111,22 +126,12 @@ void Timer1A_Handler(){
 }
 
 
-struct TCB{
-	uint32_t * localSp; //local stack pointer
-	struct TCB * nextTCB; //pointer to next TCB
-	uint32_t stack [128];
-	uint32_t id; //unique id
-	uint8_t sleepState; //flag
-	uint8_t priority; 
-	uint8_t blockedState; //flag
-};
 
-  struct TCB * RunPt;
-	struct TCB threadPool[NUMBEROFTHREADS];
 
 void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 	(*toFix).localSp = (*toFix).stack + stackSize - 16; //point to the bottom of the new stack
 	(*toFix).stack[stackSize - 1] = 0x01000000; //thumb bit
+	//PC not pushed... will be pushed later
 	(*toFix).stack[stackSize - 3] = 0x14141414; //R14 
 	(*toFix).stack[stackSize - 4] = 0x12121212; //R12
 	(*toFix).stack[stackSize - 5] = 0x03030303; //R3
@@ -160,8 +165,8 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	threadPool[uniqueId].priority = priority; 
 	threadPool[uniqueId].blockedState = 0; //flag
 	SetInitialStack(&threadPool[uniqueId], stackSize);
-	threadPool[uniqueId].stack[stackSize - 2] = (int32_t)task;
-	RunPt = &threadPool[uniqueId];
+	threadPool[uniqueId].stack[stackSize - 2] = (uint32_t)task; //push PC
+	//RunPt = &threadPool[uniqueId];
 	uniqueId++;
 	return 1;
 }

@@ -1148,6 +1148,17 @@ uint32_t ST7735_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor){
   return count;  // number of characters printed
 }
 
+//------------ST7735_Message------------
+// Function to draw in one of the two screens of the ST7735
+// 8  rows per screen (0 to 7) and 21 characters (0 to 20)
+// Requires (11 + size*size*6*8) bytes of transmission for each character
+// Input: device       top or bottom screen (0 or 1)
+//        line         rows from the top edge (0 to 7)
+//        string       pointer to a null terminated string to be printed
+//        value 			 integer to be printed
+// bgColor is Black and size is 1
+// Output: number of characters printed
+
 uint32_t ST7735_Message (int device, int line, char *string, long value){
 	uint32_t count = 0;
 	uint16_t x = 0;

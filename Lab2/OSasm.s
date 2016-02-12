@@ -32,15 +32,15 @@ OS_EnableInterrupts
 StartOS
 	LDR R0, =RunPt
 	LDR R2, [R0]
-	LDR SP, [R2]
+	LDR SP, [R2] ;load localSP
 	POP {R4-R11}
 	POP {R0-R3}
 	POP {R12}
-	POP {LR}
-	POP {LR} ;PC!
+	POP {LR} ;trash LR
+	POP {LR} ;PC on stack. the only register that is not trash. points to function that we want to run
 	POP {R1} ;discards last one PSR
-	CPSIE I
-	BX LR
+	CPSIE I 
+	BX LR    ;LR contains the PC we want to return to
 	
 
 

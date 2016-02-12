@@ -10,7 +10,6 @@
 //task: pointer to a function
 //period: 32 bit number for clock period
 //priority: three bit number from 0 to 7
-
 int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long priority);
 
 //will clear global timer 

@@ -1,4 +1,4 @@
-ARM Linker, 5.03 [Build 76] [MDK-ARM Professional]
+ARM Linker, 5.03 [Build 76] [MDK-ARM Lite]
 
 ==============================================================================
 
@@ -14,6 +14,8 @@ Section Cross References
     os.o(i.OS_Init) refers to osasm.o(.text) for OS_DisableInterrupts
     os.o(i.OS_Init) refers to pll.o(i.PLL_Init) for PLL_Init
     os.o(i.OS_Launch) refers to osasm.o(.text) for StartOS
+    os.o(i.OS_Launch) refers to os.o(.bss) for threadPool
+    os.o(i.OS_Launch) refers to os.o(.data) for RunPt
     os.o(i.OS_ReadPeriodicTime) refers to os.o(.data) for timerCounter
     os.o(i.Timer1A_Handler) refers to os.o(.data) for timerCounter
     lab2.o(i.Thread1) refers to os.o(i.OS_Suspend) for OS_Suspend
@@ -269,17 +271,17 @@ Image Symbol Table
     .text                                    0x0000040c   Section        2  use_no_semi.o(.text)
     .text                                    0x0000040e   Section        0  indicate_semi.o(.text)
     i.OS_AddThread                           0x00000410   Section        0  os.o(i.OS_AddThread)
-    i.OS_Init                                0x000004dc   Section        0  os.o(i.OS_Init)
-    i.OS_Launch                              0x000004ea   Section        0  os.o(i.OS_Launch)
-    i.OS_Suspend                             0x000004f4   Section        0  os.o(i.OS_Suspend)
-    i.PLL_Init                               0x00000504   Section        0  pll.o(i.PLL_Init)
-    i.PortE_Init                             0x00000580   Section        0  lab2.o(i.PortE_Init)
-    i.SetInitialStack                        0x000005f4   Section        0  os.o(i.SetInitialStack)
-    i.Thread1                                0x0000069c   Section        0  lab2.o(i.Thread1)
-    i.Thread2                                0x000006c8   Section        0  lab2.o(i.Thread2)
-    i.Thread3                                0x000006ec   Section        0  lab2.o(i.Thread3)
-    i.Timer1A_Handler                        0x00000718   Section        0  os.o(i.Timer1A_Handler)
-    i.main                                   0x00000740   Section        0  lab2.o(i.main)
+    i.OS_Init                                0x000004c8   Section        0  os.o(i.OS_Init)
+    i.OS_Launch                              0x000004d8   Section        0  os.o(i.OS_Launch)
+    i.OS_Suspend                             0x000004f0   Section        0  os.o(i.OS_Suspend)
+    i.PLL_Init                               0x00000500   Section        0  pll.o(i.PLL_Init)
+    i.PortE_Init                             0x0000057c   Section        0  lab2.o(i.PortE_Init)
+    i.SetInitialStack                        0x000005f0   Section        0  os.o(i.SetInitialStack)
+    i.Thread1                                0x00000698   Section        0  lab2.o(i.Thread1)
+    i.Thread2                                0x000006c4   Section        0  lab2.o(i.Thread2)
+    i.Thread3                                0x000006f0   Section        0  lab2.o(i.Thread3)
+    i.Timer1A_Handler                        0x0000071c   Section        0  os.o(i.Timer1A_Handler)
+    i.main                                   0x00000744   Section        0  lab2.o(i.main)
     .data                                    0x20000000   Section       16  os.o(.data)
     timerCounter                             0x20000000   Data           4  os.o(.data)
     taskToDo                                 0x20000008   Data           4  os.o(.data)
@@ -515,20 +517,20 @@ Image Symbol Table
     __I$use$semihosting                      0x0000040d   Thumb Code     0  use_no_semi.o(.text)
     __use_no_semihosting_swi                 0x0000040d   Thumb Code     2  use_no_semi.o(.text)
     __semihosting_library_function           0x0000040f   Thumb Code     0  indicate_semi.o(.text)
-    OS_AddThread                             0x00000411   Thumb Code   192  os.o(i.OS_AddThread)
-    OS_Init                                  0x000004dd   Thumb Code    14  os.o(i.OS_Init)
-    OS_Launch                                0x000004eb   Thumb Code     8  os.o(i.OS_Launch)
-    OS_Suspend                               0x000004f5   Thumb Code    10  os.o(i.OS_Suspend)
-    PLL_Init                                 0x00000505   Thumb Code   118  pll.o(i.PLL_Init)
-    PortE_Init                               0x00000581   Thumb Code    88  lab2.o(i.PortE_Init)
-    SetInitialStack                          0x000005f5   Thumb Code   166  os.o(i.SetInitialStack)
-    Thread1                                  0x0000069d   Thumb Code    36  lab2.o(i.Thread1)
-    Thread2                                  0x000006c9   Thumb Code    26  lab2.o(i.Thread2)
-    Thread3                                  0x000006ed   Thumb Code    36  lab2.o(i.Thread3)
-    Timer1A_Handler                          0x00000719   Thumb Code    26  os.o(i.Timer1A_Handler)
-    main                                     0x00000741   Thumb Code    86  lab2.o(i.main)
-    Region$$Table$$Base                      0x000007ac   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x000007cc   Number         0  anon$$obj.o(Region$$Table)
+    OS_AddThread                             0x00000411   Thumb Code   174  os.o(i.OS_AddThread)
+    OS_Init                                  0x000004c9   Thumb Code    14  os.o(i.OS_Init)
+    OS_Launch                                0x000004d9   Thumb Code    14  os.o(i.OS_Launch)
+    OS_Suspend                               0x000004f1   Thumb Code    10  os.o(i.OS_Suspend)
+    PLL_Init                                 0x00000501   Thumb Code   118  pll.o(i.PLL_Init)
+    PortE_Init                               0x0000057d   Thumb Code    88  lab2.o(i.PortE_Init)
+    SetInitialStack                          0x000005f1   Thumb Code   166  os.o(i.SetInitialStack)
+    Thread1                                  0x00000699   Thumb Code    36  lab2.o(i.Thread1)
+    Thread2                                  0x000006c5   Thumb Code    36  lab2.o(i.Thread2)
+    Thread3                                  0x000006f1   Thumb Code    36  lab2.o(i.Thread3)
+    Timer1A_Handler                          0x0000071d   Thumb Code    26  os.o(i.Timer1A_Handler)
+    main                                     0x00000745   Thumb Code    86  lab2.o(i.main)
+    Region$$Table$$Base                      0x000007b0   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x000007d0   Number         0  anon$$obj.o(Region$$Table)
     uniqueId                                 0x20000004   Data           1  os.o(.data)
     RunPt                                    0x2000000c   Data           4  os.o(.data)
     NumCreated                               0x20000010   Data           4  lab2.o(.data)
@@ -554,9 +556,9 @@ Memory Map of the image
 
   Image Entry point : 0x0000026d
 
-  Load Region LR_1 (Base: 0x00000000, Size: 0x00000808, Max: 0xffffffff, ABSOLUTE)
+  Load Region LR_1 (Base: 0x00000000, Size: 0x0000080c, Max: 0xffffffff, ABSOLUTE)
 
-    Execution Region ER_RO (Base: 0x00000000, Size: 0x000007cc, Max: 0xffffffff, ABSOLUTE)
+    Execution Region ER_RO (Base: 0x00000000, Size: 0x000007d0, Max: 0xffffffff, ABSOLUTE)
 
     Base Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -616,21 +618,21 @@ Memory Map of the image
     0x0000040c   0x00000002   Code   RO          270    .text               c_w.l(use_no_semi.o)
     0x0000040e   0x00000000   Code   RO          272    .text               c_w.l(indicate_semi.o)
     0x0000040e   0x00000002   PAD
-    0x00000410   0x000000cc   Code   RO           25    i.OS_AddThread      os.o
-    0x000004dc   0x0000000e   Code   RO           27    i.OS_Init           os.o
-    0x000004ea   0x00000008   Code   RO           28    i.OS_Launch         os.o
-    0x000004f2   0x00000002   PAD
-    0x000004f4   0x00000010   Code   RO           30    i.OS_Suspend        os.o
-    0x00000504   0x0000007c   Code   RO            1    i.PLL_Init          pll.o
-    0x00000580   0x00000074   Code   RO          108    i.PortE_Init        lab2.o
-    0x000005f4   0x000000a6   Code   RO           31    i.SetInitialStack   os.o
-    0x0000069a   0x00000002   PAD
-    0x0000069c   0x0000002c   Code   RO          109    i.Thread1           lab2.o
-    0x000006c8   0x00000024   Code   RO          110    i.Thread2           lab2.o
-    0x000006ec   0x0000002c   Code   RO          111    i.Thread3           lab2.o
-    0x00000718   0x00000028   Code   RO           32    i.Timer1A_Handler   os.o
-    0x00000740   0x0000006c   Code   RO          112    i.main              lab2.o
-    0x000007ac   0x00000020   Data   RO          324    Region$$Table       anon$$obj.o
+    0x00000410   0x000000b8   Code   RO           25    i.OS_AddThread      os.o
+    0x000004c8   0x0000000e   Code   RO           27    i.OS_Init           os.o
+    0x000004d6   0x00000002   PAD
+    0x000004d8   0x00000018   Code   RO           28    i.OS_Launch         os.o
+    0x000004f0   0x00000010   Code   RO           30    i.OS_Suspend        os.o
+    0x00000500   0x0000007c   Code   RO            1    i.PLL_Init          pll.o
+    0x0000057c   0x00000074   Code   RO          108    i.PortE_Init        lab2.o
+    0x000005f0   0x000000a6   Code   RO           31    i.SetInitialStack   os.o
+    0x00000696   0x00000002   PAD
+    0x00000698   0x0000002c   Code   RO          109    i.Thread1           lab2.o
+    0x000006c4   0x0000002c   Code   RO          110    i.Thread2           lab2.o
+    0x000006f0   0x0000002c   Code   RO          111    i.Thread3           lab2.o
+    0x0000071c   0x00000028   Code   RO           32    i.Timer1A_Handler   os.o
+    0x00000744   0x0000006c   Code   RO          112    i.main              lab2.o
+    0x000007b0   0x00000020   Data   RO          324    Region$$Table       anon$$obj.o
 
 
     Execution Region ER_RW (Base: 0x20000000, Size: 0x0000003c, Max: 0xffffffff, ABSOLUTE)
@@ -659,14 +661,14 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       348         76          0         44          0       2834   lab2.o
-       448         32          0         16       1584       3070   os.o
+       356         74          0         44          0       2858   lab2.o
+       444         40          0         16       1584       3074   os.o
         76          6          0          0          0        160   osasm.o
        124          6          0          0          0       4587   pll.o
-       692        632          0          0       1024        820   startup.o
+       692        632          0          0       1024        828   startup.o
 
     ----------------------------------------------------------------------
-      1692        752         32         60       2608      11471   Object Totals
+      1696        758         32         60       2608      11507   Object Totals
          0          0         32          0          0          0   (incl. Generated)
          4          0          0          0          0          0   (incl. Padding)
 
@@ -715,15 +717,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-      1964        768         32         60       2708      11267   Grand Totals
-      1964        768         32         60       2708      11267   ELF Image Totals
-      1964        768         32         60          0          0   ROM Totals
+      1968        774         32         60       2708      11303   Grand Totals
+      1968        774         32         60       2708      11303   ELF Image Totals
+      1968        774         32         60          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                 1996 (   1.95kB)
+    Total RO  Size (Code + RO Data)                 2000 (   1.95kB)
     Total RW  Size (RW Data + ZI Data)              2768 (   2.70kB)
-    Total ROM Size (Code + RO Data + RW Data)       2056 (   2.01kB)
+    Total ROM Size (Code + RO Data + RW Data)       2060 (   2.01kB)
 
 ==============================================================================
 
