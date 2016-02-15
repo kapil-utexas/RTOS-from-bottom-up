@@ -24,77 +24,79 @@ ARM Macro Assembler    Page 1
                                                              thread
    15 00000000                 EXPORT           OS_DisableInterrupts
    16 00000000                 EXPORT           OS_EnableInterrupts
-   17 00000000                 EXPORT           PendSV_Handler
+   17 00000000         ;EXPORT  PendSV_Handler
    18 00000000                 EXPORT           StartOS
-   19 00000000         
+   19 00000000                 EXPORT           SysTick_Handler
    20 00000000         
    21 00000000         
    22 00000000         
-   23 00000000         OS_DisableInterrupts
-   24 00000000 B672            CPSID            I
-   25 00000002 4770            BX               LR
-   26 00000004         
+   23 00000000         
+   24 00000000         OS_DisableInterrupts
+   25 00000000 B672            CPSID            I
+   26 00000002 4770            BX               LR
    27 00000004         
-   28 00000004         OS_EnableInterrupts
-   29 00000004 B662            CPSIE            I
-   30 00000006 4770            BX               LR
-   31 00000008         
-   32 00000008         StartOS
-   33 00000008 480F            LDR              R0, =RunPt
-   34 0000000A 6802            LDR              R2, [R0]
-   35 0000000C F8D2 D000       LDR              SP, [R2]    ;load localSP
-   36 00000010 E8BD 0FF0       POP              {R4-R11}
-   37 00000014 BC0F            POP              {R0-R3}
-   38 00000016 F85D CB04       POP              {R12}
-   39 0000001A F85D EB04       POP              {LR}        ;trash LR
-   40 0000001E F85D EB04       POP              {LR}        ;PC on stack. the o
+   28 00000004         
+   29 00000004         OS_EnableInterrupts
+   30 00000004 B662            CPSIE            I
+   31 00000006 4770            BX               LR
+   32 00000008         
+   33 00000008         StartOS
+   34 00000008 480F            LDR              R0, =RunPt
+   35 0000000A 6802            LDR              R2, [R0]
+   36 0000000C F8D2 D000       LDR              SP, [R2]    ;load localSP
+   37 00000010 E8BD 0FF0       POP              {R4-R11}
+   38 00000014 BC0F            POP              {R0-R3}
+   39 00000016 F85D CB04       POP              {R12}
+   40 0000001A F85D EB04       POP              {LR}        ;trash LR
+   41 0000001E F85D EB04       POP              {LR}        ;PC on stack. the o
                                                             nly register that i
                                                             s not trash. points
                                                              to function that w
                                                             e want to run
-   41 00000022 BC02            POP              {R1}        ;discards last one 
+   42 00000022 BC02            POP              {R1}        ;discards last one 
                                                             PSR
-   42 00000024 B662            CPSIE            I
-   43 00000026 4770            BX               LR          ;LR contains the PC
+   43 00000024 B662            CPSIE            I
+   44 00000026 4770            BX               LR          ;LR contains the PC
                                                              we want to return 
                                                             to
-   44 00000028         
    45 00000028         
    46 00000028         
-   47 00000028         PendSV_Handler                       ; 1) Saves R0-R3,R1
-                                                            2,LR,PC,PSR
+   47 00000028         
+   48 00000028         ;PendSV_Handler                ; 1) Saves R0-R3,R12,LR,P
 
 
 
 ARM Macro Assembler    Page 2 
 
 
-   48 00000028 B672            CPSID            I
-   49 0000002A         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
+                       C,PSR
+   49 00000028         SysTick_Handler
+   50 00000028 B672            CPSID            I
+   51 0000002A         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
                        k because of interrupt
-   50 0000002A E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
+   52 0000002A E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
                                                             isters
-   51 0000002E 4806            LDR              R0, =RunPt  ;old run pointer
-   52 00000030 6801            LDR              R1, [R0]    ;now R1 points the 
+   53 0000002E 4806            LDR              R0, =RunPt  ;old run pointer
+   54 00000030 6801            LDR              R1, [R0]    ;now R1 points the 
                                                             the current TCB run
                                                             ning
-   53 00000032         ;this means R1 = TCB.localSP  
-   54 00000032 F8C1 D000       STR              SP, [R1]    ;store stack into l
+   55 00000032         ;this means R1 = TCB.localSP  
+   56 00000032 F8C1 D000       STR              SP, [R1]    ;store stack into l
                                                             ocal stack pointer 
                                                             of TCB
-   55 00000036 6849            LDR              R1, [R1,#4] ;load next to run
-   56 00000038 6001            STR              R1, [R0]    ;update RunPt
-   57 0000003A F8D1 D000       LDR              SP, [R1]    ;R1 points to the f
+   57 00000036 6849            LDR              R1, [R1,#4] ;load next to run
+   58 00000038 6001            STR              R1, [R0]    ;update RunPt
+   59 0000003A F8D1 D000       LDR              SP, [R1]    ;R1 points to the f
                                                             irst element of the
                                                              struct we want to 
                                                             switch to
-   58 0000003E E8BD 0FF0       POP              {R4-R11}    ;pop remainining re
+   60 0000003E E8BD 0FF0       POP              {R4-R11}    ;pop remainining re
                                                             gisters
-   59 00000042 B662            CPSIE            I
-   60 00000044 4770            BX               LR
-   61 00000046         
-   62 00000046 00 00           ALIGN
-   63 00000048                 END
+   61 00000042 B662            CPSIE            I
+   62 00000044 4770            BX               LR
+   63 00000046         
+   64 00000046 00 00           ALIGN
+   65 00000048                 END
               00000000 
 Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\osasm.
 d -o.\osasm.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC:\Keil\ARM\
@@ -117,7 +119,7 @@ OS_DisableInterrupts 00000000
 
 Symbol: OS_DisableInterrupts
    Definitions
-      At line 23 in file OSasm.s
+      At line 24 in file OSasm.s
    Uses
       At line 15 in file OSasm.s
 Comment: OS_DisableInterrupts used once
@@ -125,26 +127,26 @@ OS_EnableInterrupts 00000004
 
 Symbol: OS_EnableInterrupts
    Definitions
-      At line 28 in file OSasm.s
+      At line 29 in file OSasm.s
    Uses
       At line 16 in file OSasm.s
 Comment: OS_EnableInterrupts used once
-PendSV_Handler 00000028
-
-Symbol: PendSV_Handler
-   Definitions
-      At line 47 in file OSasm.s
-   Uses
-      At line 17 in file OSasm.s
-Comment: PendSV_Handler used once
 StartOS 00000008
 
 Symbol: StartOS
    Definitions
-      At line 32 in file OSasm.s
+      At line 33 in file OSasm.s
    Uses
       At line 18 in file OSasm.s
 Comment: StartOS used once
+SysTick_Handler 00000028
+
+Symbol: SysTick_Handler
+   Definitions
+      At line 49 in file OSasm.s
+   Uses
+      At line 19 in file OSasm.s
+Comment: SysTick_Handler used once
 5 symbols
 
 
@@ -158,8 +160,8 @@ Symbol: RunPt
    Definitions
       At line 14 in file OSasm.s
    Uses
-      At line 33 in file OSasm.s
-      At line 51 in file OSasm.s
+      At line 34 in file OSasm.s
+      At line 53 in file OSasm.s
 
 1 symbol
 339 symbols in table

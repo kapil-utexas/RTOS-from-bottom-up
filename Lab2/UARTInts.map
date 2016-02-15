@@ -18,25 +18,22 @@ Section Cross References
     os.o(i.OS_Launch) refers to os.o(.data) for RunPt
     os.o(i.OS_ReadPeriodicTime) refers to os.o(.data) for timerCounter
     os.o(i.Timer1A_Handler) refers to os.o(.data) for timerCounter
-    lab2.o(i.Thread1) refers to os.o(i.OS_Suspend) for OS_Suspend
-    lab2.o(i.Thread1) refers to lab2.o(.data) for Count1
-    lab2.o(i.Thread2) refers to os.o(i.OS_Suspend) for OS_Suspend
-    lab2.o(i.Thread2) refers to lab2.o(.data) for Count2
-    lab2.o(i.Thread3) refers to os.o(i.OS_Suspend) for OS_Suspend
-    lab2.o(i.Thread3) refers to lab2.o(.data) for Count3
+    lab2.o(i.Thread1b) refers to lab2.o(.data) for Count1
+    lab2.o(i.Thread2b) refers to lab2.o(.data) for Count2
+    lab2.o(i.Thread3b) refers to lab2.o(.data) for Count3
     lab2.o(i.main) refers to os.o(i.OS_Init) for OS_Init
     lab2.o(i.main) refers to lab2.o(i.PortE_Init) for PortE_Init
     lab2.o(i.main) refers to os.o(i.OS_AddThread) for OS_AddThread
     lab2.o(i.main) refers to os.o(i.OS_Launch) for OS_Launch
     lab2.o(i.main) refers to lab2.o(.data) for NumCreated
-    lab2.o(i.main) refers to lab2.o(i.Thread1) for Thread1
-    lab2.o(i.main) refers to lab2.o(i.Thread2) for Thread2
-    lab2.o(i.main) refers to lab2.o(i.Thread3) for Thread3
+    lab2.o(i.main) refers to lab2.o(i.Thread1b) for Thread1b
+    lab2.o(i.main) refers to lab2.o(i.Thread2b) for Thread2b
+    lab2.o(i.main) refers to lab2.o(i.Thread3b) for Thread3b
     startup.o(STACK) refers (Special) to heapauxi.o(.text) for __use_two_region_memory
     startup.o(HEAP) refers (Special) to heapauxi.o(.text) for __use_two_region_memory
     startup.o(RESET) refers (Special) to heapauxi.o(.text) for __use_two_region_memory
     startup.o(RESET) refers to startup.o(STACK) for StackMem
-    startup.o(RESET) refers to osasm.o(.text) for PendSV_Handler
+    startup.o(RESET) refers to osasm.o(.text) for SysTick_Handler
     startup.o(RESET) refers to os.o(i.Timer1A_Handler) for Timer1A_Handler
     startup.o(RESET) refers to __main.o(!!!main) for __main
     startup.o(.text) refers (Special) to heapauxi.o(.text) for __use_two_region_memory
@@ -148,12 +145,13 @@ Removing Unused input sections from the image.
     Removing os.o(i.OS_AddPeriodicThread), (84 bytes).
     Removing os.o(i.OS_ClearPeriodicTime), (12 bytes).
     Removing os.o(i.OS_ReadPeriodicTime), (12 bytes).
+    Removing os.o(i.OS_Suspend), (16 bytes).
     Removing os.o(i.Timer1A_Init), (80 bytes).
     Removing os.o(i.millisecondsToCount), (12 bytes).
     Removing lab2.o(.bss), (768 bytes).
     Removing lab2.o(.constdata), (4 bytes).
 
-7 unused section(s) (total 972 bytes) removed from the image.
+8 unused section(s) (total 988 bytes) removed from the image.
 
 ==============================================================================
 
@@ -165,50 +163,50 @@ Image Symbol Table
 
     RESET                                    0x00000000   Section      644  startup.o(RESET)
     ../clib/angel/boardlib.s                 0x00000000   Number         0  boardshut.o ABSOLUTE
-    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit1.o ABSOLUTE
     ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit2.o ABSOLUTE
+    ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit1.o ABSOLUTE
     ../clib/angel/boardlib.s                 0x00000000   Number         0  boardinit3.o ABSOLUTE
     ../clib/angel/handlers.s                 0x00000000   Number         0  __scatter_zi.o ABSOLUTE
     ../clib/angel/handlers.s                 0x00000000   Number         0  __scatter_copy.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit.o ABSOLUTE
-    ../clib/angel/kernel.s                   0x00000000   Number         0  rtentry4.o ABSOLUTE
-    ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit2.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  rtentry2.o ABSOLUTE
+    ../clib/angel/kernel.s                   0x00000000   Number         0  rtexit2.o ABSOLUTE
     ../clib/angel/kernel.s                   0x00000000   Number         0  rtentry.o ABSOLUTE
+    ../clib/angel/kernel.s                   0x00000000   Number         0  rtentry4.o ABSOLUTE
     ../clib/angel/rt.s                       0x00000000   Number         0  rt_raise.o ABSOLUTE
     ../clib/angel/scatter.s                  0x00000000   Number         0  __scatter.o ABSOLUTE
     ../clib/angel/startup.s                  0x00000000   Number         0  __main.o ABSOLUTE
     ../clib/angel/sys.s                      0x00000000   Number         0  sys_stackheap_outer.o ABSOLUTE
-    ../clib/angel/sys.s                      0x00000000   Number         0  libspace.o ABSOLUTE
     ../clib/angel/sys.s                      0x00000000   Number         0  indicate_semi.o ABSOLUTE
     ../clib/angel/sys.s                      0x00000000   Number         0  use_no_semi.o ABSOLUTE
+    ../clib/angel/sys.s                      0x00000000   Number         0  libspace.o ABSOLUTE
     ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_exit.o ABSOLUTE
     ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_wrch.o ABSOLUTE
     ../clib/angel/sysapp.c                   0x00000000   Number         0  sys_command.o ABSOLUTE
-    ../clib/armsys.c                         0x00000000   Number         0  no_argv.o ABSOLUTE
     ../clib/armsys.c                         0x00000000   Number         0  _get_argv_nomalloc.o ABSOLUTE
+    ../clib/armsys.c                         0x00000000   Number         0  no_argv.o ABSOLUTE
     ../clib/armsys.c                         0x00000000   Number         0  argv_veneer.o ABSOLUTE
     ../clib/armsys.c                         0x00000000   Number         0  argv_veneer.o ABSOLUTE
     ../clib/heapalloc.c                      0x00000000   Number         0  hrguard.o ABSOLUTE
     ../clib/heapaux.c                        0x00000000   Number         0  heapauxi.o ABSOLUTE
-    ../clib/libinit.s                        0x00000000   Number         0  libshutdown.o ABSOLUTE
     ../clib/libinit.s                        0x00000000   Number         0  libinit2.o ABSOLUTE
-    ../clib/libinit.s                        0x00000000   Number         0  libinit.o ABSOLUTE
     ../clib/libinit.s                        0x00000000   Number         0  libshutdown2.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  __raise.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_pvfn_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_exit.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_cppl_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_segv_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_other.o ABSOLUTE
+    ../clib/libinit.s                        0x00000000   Number         0  libinit.o ABSOLUTE
+    ../clib/libinit.s                        0x00000000   Number         0  libshutdown.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_formal.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_outer.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_general.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_segv_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_cppl_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_pvfn_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtred_inner.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_fpe_inner.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_abrt_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtred_inner.o ABSOLUTE
     ../clib/signal.c                         0x00000000   Number         0  defsig_stak_inner.o ABSOLUTE
-    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_formal.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  __raise.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_rtmem_inner.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_exit.o ABSOLUTE
+    ../clib/signal.c                         0x00000000   Number         0  defsig_other.o ABSOLUTE
     ../clib/signal.s                         0x00000000   Number         0  defsig.o ABSOLUTE
     ../clib/stdlib.c                         0x00000000   Number         0  exit.o ABSOLUTE
     ../fplib/fpinit.s                        0x00000000   Number         0  fpinit.o ABSOLUTE
@@ -272,16 +270,15 @@ Image Symbol Table
     .text                                    0x0000040e   Section        0  indicate_semi.o(.text)
     i.OS_AddThread                           0x00000410   Section        0  os.o(i.OS_AddThread)
     i.OS_Init                                0x000004c8   Section        0  os.o(i.OS_Init)
-    i.OS_Launch                              0x000004d8   Section        0  os.o(i.OS_Launch)
-    i.OS_Suspend                             0x000004f0   Section        0  os.o(i.OS_Suspend)
-    i.PLL_Init                               0x00000500   Section        0  pll.o(i.PLL_Init)
-    i.PortE_Init                             0x0000057c   Section        0  lab2.o(i.PortE_Init)
-    i.SetInitialStack                        0x000005f0   Section        0  os.o(i.SetInitialStack)
-    i.Thread1                                0x00000698   Section        0  lab2.o(i.Thread1)
-    i.Thread2                                0x000006c4   Section        0  lab2.o(i.Thread2)
-    i.Thread3                                0x000006f0   Section        0  lab2.o(i.Thread3)
-    i.Timer1A_Handler                        0x0000071c   Section        0  os.o(i.Timer1A_Handler)
-    i.main                                   0x00000744   Section        0  lab2.o(i.main)
+    i.OS_Launch                              0x000004f4   Section        0  os.o(i.OS_Launch)
+    i.PLL_Init                               0x00000518   Section        0  pll.o(i.PLL_Init)
+    i.PortE_Init                             0x00000594   Section        0  lab2.o(i.PortE_Init)
+    i.SetInitialStack                        0x00000608   Section        0  os.o(i.SetInitialStack)
+    i.Thread1b                               0x000006b0   Section        0  lab2.o(i.Thread1b)
+    i.Thread2b                               0x000006d8   Section        0  lab2.o(i.Thread2b)
+    i.Thread3b                               0x00000700   Section        0  lab2.o(i.Thread3b)
+    i.Timer1A_Handler                        0x00000728   Section        0  os.o(i.Timer1A_Handler)
+    i.main                                   0x00000750   Section        0  lab2.o(i.main)
     .data                                    0x20000000   Section       16  os.o(.data)
     timerCounter                             0x20000000   Data           4  os.o(.data)
     taskToDo                                 0x20000008   Data           4  os.o(.data)
@@ -335,7 +332,7 @@ Image Symbol Table
     UsageFault_Handler                       0x00000279   Thumb Code     2  startup.o(RESET)
     SVC_Handler                              0x0000027b   Thumb Code     2  startup.o(RESET)
     DebugMon_Handler                         0x0000027d   Thumb Code     2  startup.o(RESET)
-    SysTick_Handler                          0x00000281   Thumb Code     2  startup.o(RESET)
+    PendSV_Handler                           0x0000027f   Thumb Code     2  startup.o(RESET)
     ADC0Seq0_Handler                         0x00000283   Thumb Code     0  startup.o(RESET)
     ADC0Seq1_Handler                         0x00000283   Thumb Code     0  startup.o(RESET)
     ADC0Seq2_Handler                         0x00000283   Thumb Code     0  startup.o(RESET)
@@ -504,7 +501,7 @@ Image Symbol Table
     OS_DisableInterrupts                     0x00000351   Thumb Code     0  osasm.o(.text)
     OS_EnableInterrupts                      0x00000355   Thumb Code     0  osasm.o(.text)
     StartOS                                  0x00000359   Thumb Code     0  osasm.o(.text)
-    PendSV_Handler                           0x00000379   Thumb Code     0  osasm.o(.text)
+    SysTick_Handler                          0x00000379   Thumb Code     0  osasm.o(.text)
     __use_two_region_memory                  0x0000039d   Thumb Code     2  heapauxi.o(.text)
     __rt_heap_escrow$2region                 0x0000039f   Thumb Code     2  heapauxi.o(.text)
     __rt_heap_expand$2region                 0x000003a1   Thumb Code     2  heapauxi.o(.text)
@@ -518,19 +515,18 @@ Image Symbol Table
     __use_no_semihosting_swi                 0x0000040d   Thumb Code     2  use_no_semi.o(.text)
     __semihosting_library_function           0x0000040f   Thumb Code     0  indicate_semi.o(.text)
     OS_AddThread                             0x00000411   Thumb Code   174  os.o(i.OS_AddThread)
-    OS_Init                                  0x000004c9   Thumb Code    14  os.o(i.OS_Init)
-    OS_Launch                                0x000004d9   Thumb Code    14  os.o(i.OS_Launch)
-    OS_Suspend                               0x000004f1   Thumb Code    10  os.o(i.OS_Suspend)
-    PLL_Init                                 0x00000501   Thumb Code   118  pll.o(i.PLL_Init)
-    PortE_Init                               0x0000057d   Thumb Code    88  lab2.o(i.PortE_Init)
-    SetInitialStack                          0x000005f1   Thumb Code   166  os.o(i.SetInitialStack)
-    Thread1                                  0x00000699   Thumb Code    36  lab2.o(i.Thread1)
-    Thread2                                  0x000006c5   Thumb Code    36  lab2.o(i.Thread2)
-    Thread3                                  0x000006f1   Thumb Code    36  lab2.o(i.Thread3)
-    Timer1A_Handler                          0x0000071d   Thumb Code    26  os.o(i.Timer1A_Handler)
-    main                                     0x00000745   Thumb Code    86  lab2.o(i.main)
-    Region$$Table$$Base                      0x000007b0   Number         0  anon$$obj.o(Region$$Table)
-    Region$$Table$$Limit                     0x000007d0   Number         0  anon$$obj.o(Region$$Table)
+    OS_Init                                  0x000004c9   Thumb Code    40  os.o(i.OS_Init)
+    OS_Launch                                0x000004f5   Thumb Code    28  os.o(i.OS_Launch)
+    PLL_Init                                 0x00000519   Thumb Code   118  pll.o(i.PLL_Init)
+    PortE_Init                               0x00000595   Thumb Code    88  lab2.o(i.PortE_Init)
+    SetInitialStack                          0x00000609   Thumb Code   166  os.o(i.SetInitialStack)
+    Thread1b                                 0x000006b1   Thumb Code    32  lab2.o(i.Thread1b)
+    Thread2b                                 0x000006d9   Thumb Code    32  lab2.o(i.Thread2b)
+    Thread3b                                 0x00000701   Thumb Code    32  lab2.o(i.Thread3b)
+    Timer1A_Handler                          0x00000729   Thumb Code    26  os.o(i.Timer1A_Handler)
+    main                                     0x00000751   Thumb Code    86  lab2.o(i.main)
+    Region$$Table$$Base                      0x000007bc   Number         0  anon$$obj.o(Region$$Table)
+    Region$$Table$$Limit                     0x000007dc   Number         0  anon$$obj.o(Region$$Table)
     uniqueId                                 0x20000004   Data           1  os.o(.data)
     RunPt                                    0x2000000c   Data           4  os.o(.data)
     NumCreated                               0x20000010   Data           4  lab2.o(.data)
@@ -556,9 +552,9 @@ Memory Map of the image
 
   Image Entry point : 0x0000026d
 
-  Load Region LR_1 (Base: 0x00000000, Size: 0x0000080c, Max: 0xffffffff, ABSOLUTE)
+  Load Region LR_1 (Base: 0x00000000, Size: 0x00000818, Max: 0xffffffff, ABSOLUTE)
 
-    Execution Region ER_RO (Base: 0x00000000, Size: 0x000007d0, Max: 0xffffffff, ABSOLUTE)
+    Execution Region ER_RO (Base: 0x00000000, Size: 0x000007dc, Max: 0xffffffff, ABSOLUTE)
 
     Base Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -619,20 +615,18 @@ Memory Map of the image
     0x0000040e   0x00000000   Code   RO          272    .text               c_w.l(indicate_semi.o)
     0x0000040e   0x00000002   PAD
     0x00000410   0x000000b8   Code   RO           25    i.OS_AddThread      os.o
-    0x000004c8   0x0000000e   Code   RO           27    i.OS_Init           os.o
-    0x000004d6   0x00000002   PAD
-    0x000004d8   0x00000018   Code   RO           28    i.OS_Launch         os.o
-    0x000004f0   0x00000010   Code   RO           30    i.OS_Suspend        os.o
-    0x00000500   0x0000007c   Code   RO            1    i.PLL_Init          pll.o
-    0x0000057c   0x00000074   Code   RO          108    i.PortE_Init        lab2.o
-    0x000005f0   0x000000a6   Code   RO           31    i.SetInitialStack   os.o
-    0x00000696   0x00000002   PAD
-    0x00000698   0x0000002c   Code   RO          109    i.Thread1           lab2.o
-    0x000006c4   0x0000002c   Code   RO          110    i.Thread2           lab2.o
-    0x000006f0   0x0000002c   Code   RO          111    i.Thread3           lab2.o
-    0x0000071c   0x00000028   Code   RO           32    i.Timer1A_Handler   os.o
-    0x00000744   0x0000006c   Code   RO          112    i.main              lab2.o
-    0x000007b0   0x00000020   Data   RO          324    Region$$Table       anon$$obj.o
+    0x000004c8   0x0000002c   Code   RO           27    i.OS_Init           os.o
+    0x000004f4   0x00000024   Code   RO           28    i.OS_Launch         os.o
+    0x00000518   0x0000007c   Code   RO            1    i.PLL_Init          pll.o
+    0x00000594   0x00000074   Code   RO          108    i.PortE_Init        lab2.o
+    0x00000608   0x000000a6   Code   RO           31    i.SetInitialStack   os.o
+    0x000006ae   0x00000002   PAD
+    0x000006b0   0x00000028   Code   RO          109    i.Thread1b          lab2.o
+    0x000006d8   0x00000028   Code   RO          110    i.Thread2b          lab2.o
+    0x00000700   0x00000028   Code   RO          111    i.Thread3b          lab2.o
+    0x00000728   0x00000028   Code   RO           32    i.Timer1A_Handler   os.o
+    0x00000750   0x0000006c   Code   RO          112    i.main              lab2.o
+    0x000007bc   0x00000020   Data   RO          324    Region$$Table       anon$$obj.o
 
 
     Execution Region ER_RW (Base: 0x20000000, Size: 0x0000003c, Max: 0xffffffff, ABSOLUTE)
@@ -661,16 +655,16 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       356         74          0         44          0       2858   lab2.o
-       444         40          0         16       1584       3074   os.o
-        76          6          0          0          0        160   osasm.o
+       344         74          0         44          0       2837   lab2.o
+       470         36          0         16       1584       2817   os.o
+        76          6          0          0          0        164   osasm.o
        124          6          0          0          0       4587   pll.o
        692        632          0          0       1024        828   startup.o
 
     ----------------------------------------------------------------------
-      1696        758         32         60       2608      11507   Object Totals
+      1708        754         32         60       2608      11233   Object Totals
          0          0         32          0          0          0   (incl. Generated)
-         4          0          0          0          0          0   (incl. Padding)
+         2          0          0          0          0          0   (incl. Padding)
 
     ----------------------------------------------------------------------
 
@@ -717,15 +711,15 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-      1968        774         32         60       2708      11303   Grand Totals
-      1968        774         32         60       2708      11303   ELF Image Totals
-      1968        774         32         60          0          0   ROM Totals
+      1980        770         32         60       2708      11081   Grand Totals
+      1980        770         32         60       2708      11081   ELF Image Totals
+      1980        770         32         60          0          0   ROM Totals
 
 ==============================================================================
 
-    Total RO  Size (Code + RO Data)                 2000 (   1.95kB)
+    Total RO  Size (Code + RO Data)                 2012 (   1.96kB)
     Total RW  Size (RW Data + ZI Data)              2768 (   2.70kB)
-    Total ROM Size (Code + RO Data + RW Data)       2060 (   2.01kB)
+    Total ROM Size (Code + RO Data + RW Data)       2072 (   2.02kB)
 
 ==============================================================================
 

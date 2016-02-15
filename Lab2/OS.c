@@ -51,9 +51,9 @@ void OS_Init()
 	//ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 	//ADC_Init(0);
 	//UART_Init();              					 // initialize UART
-	//NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
-  //NVIC_ST_CURRENT_R = 0;      // any write to current clears it
-  //NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
+	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
+  NVIC_ST_CURRENT_R = 0;      // any write to current clears it
+  NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
 }
 //******** OS_Launch *************** 
 // start the scheduler, enable interrupts
@@ -65,6 +65,8 @@ void OS_Init()
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
 	RunPt = &threadPool[0]; //make the first thread active
+	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
+	NVIC_ST_CTRL_R = 0x07; //enable systick
 	StartOS();
 	while(1);
 }
@@ -125,7 +127,77 @@ void Timer1A_Handler(){
 	taskToDo();
 }
 
+// ******** OS_InitSemaphore ************
+// initialize semaphore 
+// input:  pointer to a semaphore
+// output: none
+void OS_InitSemaphore(Sema4Type *semaPt, long value)
+{
+	OS_DisableInterrupts(); // Disable interrupts
+	(*semaPt).Value = value;
+	OS_EnableInterrupts();
+}
 
+// ******** OS_Wait ************
+// decrement semaphore 
+// Lab2 spinlock
+// Lab3 block if less than zero
+// input:  pointer to a counting semaphore
+// output: none
+void OS_Wait(Sema4Type *semaPt)
+{
+	OS_DisableInterrupts();
+	while((*semaPt).Value == 0)
+	{
+		OS_EnableInterrupts();
+		OS_DisableInterrupts();
+	} 
+	(*semaPt).Value--; //decrease count
+	OS_EnableInterrupts();
+
+}
+
+// ******** OS_Signal ************
+// increment semaphore 
+// Lab2 spinlock
+// Lab3 wakeup blocked thread if appropriate 
+// input:  pointer to a counting semaphore
+// output: none
+void OS_Signal(Sema4Type *semaPt)
+{
+	OS_DisableInterrupts();
+	(*semaPt).Value ++;
+	OS_EnableInterrupts();
+
+}
+
+// ******** OS_bWait ************
+// Lab2 spinlock, set to 0
+// Lab3 block if less than zero
+// input:  pointer to a binary semaphore
+// output: none
+void OS_bWait(Sema4Type *semaPt)
+{
+	OS_DisableInterrupts();
+	while((*semaPt).Value == 0)
+	{
+		OS_EnableInterrupts();
+		OS_DisableInterrupts();
+	} //while someone has the semaphor
+	(*semaPt).Value = 0; //take the semaphore
+	OS_EnableInterrupts();
+}
+// ******** OS_bSignal ************
+// Lab2 spinlock, set to 1
+// Lab3 wakeup blocked thread if appropriate 
+// input:  pointer to a binary semaphore
+// output: none
+void OS_bSignal(Sema4Type *semaPt)
+{
+	OS_DisableInterrupts();
+	(*semaPt).Value = 1;
+	OS_EnableInterrupts();
+}
 
 
 void SetInitialStack(struct TCB * toFix, uint32_t stackSize){

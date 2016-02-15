@@ -14,8 +14,9 @@
         EXTERN  RunPt            ; currently running thread
         EXPORT  OS_DisableInterrupts
         EXPORT  OS_EnableInterrupts
-        EXPORT  PendSV_Handler
+        ;EXPORT  PendSV_Handler
 		EXPORT  StartOS
+		EXPORT  SysTick_Handler
 			
 			
 
@@ -44,7 +45,8 @@ StartOS
 	
 
 
-PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
+;PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
+SysTick_Handler
 	CPSID I
 	;we can assume that R0-R3, R12, LR, PC, PSRX are in stack because of interrupt
 	PUSH{R4-R11} ;push remaining registers
