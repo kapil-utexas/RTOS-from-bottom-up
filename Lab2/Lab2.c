@@ -117,7 +117,7 @@ void Thread3b(void){
     Count3++;
   }
 }
-int main(void){  // Testmain2
+int main2(void){  // Testmain2
   OS_Init();           // initialize, disable interrupts
   PortE_Init();       // profile user threads
   NumCreated = 0;
@@ -129,4 +129,29 @@ int main(void){  // Testmain2
  
   OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
   return 0;            // this never executes
+}
+
+//******************* Lab 3 Measurement of context switch time**********
+// Run this to measure the time it takes to perform a task switch
+// UART0 not needed 
+// SYSTICK interrupts, period established by OS_Launch
+// first timer not needed
+// second timer not needed
+// SW1 not needed, 
+// SW2 not needed
+// logic analyzer on PF1 for systick interrupt (in your OS)
+//                on PE0 to measure context switch time
+void Thread8(void){       // only thread running
+  while(1){
+    PE0 ^= 0x01;      // debugging profile  
+		//Count3++;
+  }
+}
+int main(void){       // Testmain7
+  PortE_Init();
+  OS_Init();           // initialize, disable interrupts
+  NumCreated = 0 ;
+  NumCreated += OS_AddThread(&Thread8,128,2); 
+  OS_Launch(TIME_1MS/10); // 100us, doesn't return, interrupts enabled in here
+  return 0;             // this never executes
 }

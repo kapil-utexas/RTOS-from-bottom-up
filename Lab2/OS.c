@@ -24,6 +24,7 @@ static uint32_t timerCounter = 0;
 struct TCB{
 	uint32_t * localSp; //local stack pointer
 	struct TCB * nextTCB; //pointer to next TCB
+	uint8_t active;
 	uint32_t stack [128];
 	uint32_t id; //unique id
 	uint8_t sleepState; //flag
@@ -46,11 +47,17 @@ void StartOS(void);
 // output: none
 void OS_Init()
 {
+	uint8_t counter = 0;
 	OS_DisableInterrupts();
 	PLL_Init(Bus80MHz);
 	//ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 	//ADC_Init(0);
 	//UART_Init();              					 // initialize UART
+	//construct linked list
+	for (counter = 0; counter<NUMBEROFTHREADS; counter++)
+	{
+		threadPool[counter].nextTCB = &threadPool[(counter + 1) % NUMBEROFTHREADS ]; //address of next TCB
+	}
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
@@ -231,8 +238,9 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 uint8_t uniqueId=0; //make unique ids
 int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long priority)
 {
-	threadPool[uniqueId].nextTCB = &threadPool[(uniqueId + 1) % NUMBEROFTHREADS ]; //address of next TCB
+	//threadPool[uniqueId].nextTCB = &threadPool[(uniqueId + 1) % NUMBEROFTHREADS ]; //address of next TCB
 	threadPool[uniqueId].id = uniqueId; //unique id
+	threadPool[uniqueId].active = 1;
 	threadPool[uniqueId].sleepState = 0; //flag
 	threadPool[uniqueId].priority = priority; 
 	threadPool[uniqueId].blockedState = 0; //flag
