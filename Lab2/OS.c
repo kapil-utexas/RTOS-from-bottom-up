@@ -135,14 +135,12 @@ void Timer1A_Handler(){
 }
 
 // ******** OS_InitSemaphore ************
-// initialize semaphore 
+// initialize semaphore before launch OS
 // input:  pointer to a semaphore
 // output: none
 void OS_InitSemaphore(Sema4Type *semaPt, long value)
 {
-	OS_DisableInterrupts(); // Disable interrupts
 	(*semaPt).Value = value;
-	OS_EnableInterrupts();
 }
 
 // ******** OS_Wait ************

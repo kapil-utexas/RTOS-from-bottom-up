@@ -55,6 +55,13 @@ unsigned long JitterHistogram[JITTERSIZE]={0,};
 #define PE2  (*((volatile unsigned long *)0x40024010))
 #define PE3  (*((volatile unsigned long *)0x40024020))
 
+#define PF4                     (*((volatile unsigned long *)0x40025040))
+#define PF3                     (*((volatile unsigned long *)0x40025020))
+#define PF2                     (*((volatile unsigned long *)0x40025010))
+#define PF1                     (*((volatile unsigned long *)0x40025008))
+#define PF0                     (*((volatile unsigned long *)0x40025004))
+
+uint32_t PF3Address = 0x40025020;
 
 void PortE_Init(void){ unsigned long volatile delay;
   SYSCTL_RCGC2_R |= 0x10;       // activate port E
@@ -65,6 +72,17 @@ void PortE_Init(void){ unsigned long volatile delay;
   GPIO_PORTE_DEN_R |= 0x0F;     // enable digital I/O on PE3-0
   GPIO_PORTE_PCTL_R = ~0x0000FFFF;
   GPIO_PORTE_AMSEL_R &= ~0x0F;;      // disable analog functionality on PF
+}
+
+void PortF_Init(void){ volatile unsigned long delay;
+  SYSCTL_RCGC2_R |= 0x20;       // activate port E
+  delay = SYSCTL_RCGC2_R;        
+  delay = SYSCTL_RCGC2_R;         
+  GPIO_PORTF_DIR_R |= 0x0E;    // make PE3-0 output heartbeats
+  GPIO_PORTF_AFSEL_R &= ~0x0E;   // disable alt funct on PE3-0
+  GPIO_PORTF_DEN_R |= 0x0E;     // enable digital I/O on PE3-0
+  GPIO_PORTF_PCTL_R = ~0x0000FFF0;
+  GPIO_PORTF_AMSEL_R &= ~0x0E;      // disable analog functionality on PF
 }
 
 
@@ -87,50 +105,6 @@ unsigned long Count3;   // number of times thread3 loops
 unsigned long Count4;   // number of times thread4 loops
 unsigned long Count5;   // number of times thread5 loops
 
-
-//*******************Second TEST**********
-// Once the initalize test runs, test this (Lab 1 part 1)
-// no UART interrupts
-// SYSTICK interrupts, with or without period established by OS_Launch
-// no timer interrupts
-// no switch interrupts
-// no ADC serial port or LCD output
-// no calls to semaphores
-void Thread1b(void){
-  Count1 = 0;          
-  for(;;){
-    PE0 ^= 0x01;       // heartbeat
-    Count1++;
-  }
-}
-void Thread2b(void){
-  Count2 = 0;          
-  for(;;){
-    PE1 ^= 0x02;       // heartbeat
-    Count2++;
-  }
-}
-void Thread3b(void){
-  Count3 = 0;          
-  for(;;){
-    PE2 ^= 0x04;       // heartbeat
-    Count3++;
-  }
-}
-int main2(void){  // Testmain2
-  OS_Init();           // initialize, disable interrupts
-  PortE_Init();       // profile user threads
-  NumCreated = 0;
-  NumCreated += OS_AddThread(&Thread1b,128,1); 
-  NumCreated += OS_AddThread(&Thread2b,128,2); 
-  NumCreated += OS_AddThread(&Thread3b,128,3); 
-  // Count1 Count2 Count3 should be equal on average
-  // counts are larger than testmain1
- 
-  OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
-  return 0;            // this never executes
-}
-
 //******************* Lab 3 Measurement of context switch time**********
 // Run this to measure the time it takes to perform a task switch
 // UART0 not needed 
@@ -143,12 +117,12 @@ int main2(void){  // Testmain2
 //                on PE0 to measure context switch time
 void Thread8(void){       // only thread running
   while(1){
-    PE0 ^= 0x01;      // debugging profile  
+    PF1 ^= 0x02;      // debugging profile  
 		//Count3++;
   }
 }
 int main(void){       // Testmain7
-  PortE_Init();
+  PortF_Init();
   OS_Init();           // initialize, disable interrupts
   NumCreated = 0 ;
   NumCreated += OS_AddThread(&Thread8,128,2); 

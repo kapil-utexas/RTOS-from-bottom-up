@@ -3,7 +3,7 @@ F (.\PLL.c)(0x56B519FE)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --sp
 I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C89844)
 I (PLL.h)(0x56B519FE)
 I (../inc/tm4c123gh6pm.h)(0x56B51A06)
-F (.\OS.c)(0x56C129A2)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\os.o --omf_browse .\os.crf --depend .\os.d)
+F (.\OS.c)(0x56C38526)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\os.o --omf_browse .\os.crf --depend .\os.d)
 I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C89844)
 I (../inc/tm4c123gh6pm.h)(0x56B51A06)
 I (OS.h)(0x56B6A0C6)
@@ -11,11 +11,11 @@ I (PLL.h)(0x56B519FE)
 I (ST7735.h)(0x56B6A016)
 I (UART.h)(0x56B519FE)
 I (ADC.h)(0x56BB8818)
-F (.\Lab2.c)(0x56C12A4F)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\lab2.o --omf_browse .\lab2.crf --depend .\lab2.d)
+F (.\Lab2.c)(0x56C621B8)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\lab2.o --omf_browse .\lab2.crf --depend .\lab2.d)
 I (C:\Keil\ARM\ARMCC\include\string.h)(0x51C89844)
 I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C89844)
 I (OS.h)(0x56B6A0C6)
 I (..\inc/tm4c123gh6pm.h)(0x56B51A06)
 I (Lab2.h)(0x56B6A94B)
 F (.\startup.s)(0x56BB8818)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\startup.lst --xref -o .\startup.o --depend .\startup.d)
-F (.\OSasm.s)(0x56C1270A)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\osasm.lst --xref -o .\osasm.o --depend .\osasm.d)
+F (.\OSasm.s)(0x56C622A4)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\osasm.lst --xref -o .\osasm.o --depend .\osasm.d)
