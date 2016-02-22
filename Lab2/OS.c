@@ -21,22 +21,16 @@
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
 
-struct TCB{
-	uint32_t * localSp; //local stack pointer
-	struct TCB * nextTCB; //pointer to next TCB
-	uint8_t active;
-	uint32_t stack [128];
-	uint32_t id; //unique id
-	uint8_t sleepState; //flag
-	uint8_t priority; 
-	uint8_t blockedState; //flag
-};
-
 
 struct TCB * RunPt; //scheduler pointer
+
 struct TCB * DeadPt; //dead threads pointer
 struct TCB * SleepPt; //sleeping threads pointer
 struct TCB * SchedulerPt; //sleeping threads pointer
+//counters to keep track of how many elements are in each pool
+uint32_t schedulerCount; 
+uint32_t deadCount;
+uint32_t sleepCount;
 
 struct TCB threadPool[NUMBEROFTHREADS];
 
@@ -64,6 +58,7 @@ void OS_Init()
 	}
 	threadPool[NUMBEROFTHREADS - 1].nextTCB = '\0'; 
 	DeadPt = &threadPool[0]; //point to first element of not active threads 
+	deadCount = NUMBEROFTHREADS;
 	RunPt = '\0';
 	SchedulerPt = '\0';
 	SleepPt = '\0';
@@ -236,6 +231,7 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 
 static void addDeadToScheduler()
 {
+
 	if(SchedulerPt == '\0')
 	{
 		SchedulerPt = DeadPt;
@@ -256,6 +252,8 @@ static void addDeadToScheduler()
 		temp = (*temp).nextTCB; //get the element you just added to the list
 		(*temp).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
 	}
+	schedulerCount++;
+	deadCount--;
 }
 
 //******** OS_AddThread *************** 
@@ -286,6 +284,7 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	(DeadPt)->sleepState = 0; //flag
 	(DeadPt)->priority = priority; 
 	(DeadPt)->blockedState = 0; //flag
+	(DeadPt)->needToWakeUp = 0; //flag
 	SetInitialStack(DeadPt, stackSize);
 	(DeadPt)->stack[stackSize - 2] = (uint32_t)task; //push PC
 	uniqueId++;
@@ -302,4 +301,102 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 // output: none
 void OS_Suspend(){
 		NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
+}
+
+static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
+{
+	struct TCB * removed;
+	struct TCB * temp;
+	
+	(*RunPt).active = 0;
+	//remove from active 
+	temp = SchedulerPt;
+	
+	if(RunPt == temp) //first element
+	{
+		if(schedulerCount == 1)
+		{
+			removed = SchedulerPt; //store before we remove
+			SchedulerPt = '\0';
+		}
+		else //remove and fix
+		{
+			while((*temp).nextTCB != (SchedulerPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			//now at end of Scheduler pool
+			(*temp).nextTCB = (*SchedulerPt).nextTCB;
+			removed = SchedulerPt; //store before we remove
+			SchedulerPt = (*SchedulerPt).nextTCB;
+		}
+	}
+	else //not the first element, could be middle or end (theres no end in circular)
+	{
+			while((*temp).nextTCB != (RunPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			removed = (*temp).nextTCB;
+			(*temp).nextTCB = temp->nextTCB->nextTCB; //remove from linked list
+	}
+	//now we have the node we took out in the "removed" variable
+	if(toAdd == SleepPt) //if putting thread to sleep need to update flag
+	{
+		(*removed).sleepState = sleepTime;
+		if(sleepTime == 0)
+		{
+			(*removed).needToWakeUp = 1;
+		}
+	}
+	temp = toAdd;
+	while((*temp).nextTCB != '\0')
+	{
+		temp = (*temp).nextTCB;
+	}
+	(*temp).nextTCB = removed;
+	temp = (*temp).nextTCB;
+	(*temp).nextTCB = '\0';
+	schedulerCount--;
+}
+
+// ******** OS_Kill ************
+// kill the currently running thread, release its TCB and stack
+// input:  none
+// output: none
+void OS_Kill(void)
+{
+	threadRemover(DeadPt, 0); //parameter 0 will be ignored
+	deadCount++;
+}
+
+// ******** OS_Sleep ************
+// place this thread into a dormant state
+// input:  number of msec to sleep
+// output: none
+// You are free to select the time resolution for this function
+// Sleep time is a multiple of context switch time period
+// OS_Sleep(0) implements cooperative multitasking
+void OS_Sleep(unsigned long sleepTime)
+{
+	threadRemover(SleepPt, sleepTime * 2);
+	sleepCount++;
+}
+
+//******** OS_AddSW1Task *************** 
+// add a background task to run whenever the SW1 (PF4) button is pushed
+// Inputs: pointer to a void/void background function
+//         priority 0 is the highest, 5 is the lowest
+// Outputs: 1 if successful, 0 if this thread can not be added
+// It is assumed that the user task will run to completion and return
+// This task can not spin, block, loop, sleep, or kill
+// This task can call OS_Signal  OS_bSignal	 OS_AddThread
+// This task does not have a Thread ID
+// In labs 2 and 3, this command will be called 0 or 1 times
+// In lab 2, the priority field can be ignored
+// In lab 3, there will be up to four background threads, and this priority field 
+//           determines the relative priority of these four threads
+int OS_AddSW1Task(void(*task)(void), unsigned long priority)
+{
+	
 }

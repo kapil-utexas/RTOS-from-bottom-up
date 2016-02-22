@@ -75,7 +75,7 @@ void PortE_Init(void){ unsigned long volatile delay;
 }
 
 void PortF_Init(void){ volatile unsigned long delay;
-  SYSCTL_RCGC2_R |= 0x20;       // activate port E
+  SYSCTL_RCGC2_R |= 0x20;       // activate port F
   delay = SYSCTL_RCGC2_R;        
   delay = SYSCTL_RCGC2_R;         
   GPIO_PORTF_DIR_R |= 0x0E;    // make PE3-0 output heartbeats
@@ -84,7 +84,6 @@ void PortF_Init(void){ volatile unsigned long delay;
   GPIO_PORTF_PCTL_R = ~0x0000FFF0;
   GPIO_PORTF_AMSEL_R &= ~0x0E;      // disable analog functionality on PF
 }
-
 
 
 //+++++++++++++++++++++++++DEBUGGING CODE++++++++++++++++++++++++
@@ -105,46 +104,68 @@ unsigned long Count3;   // number of times thread3 loops
 unsigned long Count4;   // number of times thread4 loops
 unsigned long Count5;   // number of times thread5 loops
 
-//*******************Second TEST**********
-// Once the initalize test runs, test this (Lab 1 part 1)
-// no UART interrupts
+
+//*******************Third TEST**********
+// Once the second test runs, test this (Lab 1 part 2)
+// no UART1 interrupts
 // SYSTICK interrupts, with or without period established by OS_Launch
-// no timer interrupts
-// no switch interrupts
+// Timer interrupts, with or without period established by OS_AddPeriodicThread
+// PortF GPIO interrupts, active low
 // no ADC serial port or LCD output
-// no calls to semaphores
-void Thread1b(void){
-  Count1 = 0;          
+// tests the spinlock semaphores, tests Sleep and Kill
+Sema4Type Readyc;        // set in background
+int Lost;
+void BackgroundThread1c(void){   // called at 1000 Hz
+  Count1++;
+  OS_Signal(&Readyc);
+}
+void Thread5c(void){
   for(;;){
-    PE0 ^= 0x01;       // heartbeat
-    Count1++;
+    OS_Wait(&Readyc);
+    Count5++;   // Count2 + Count5 should equal Count1 
+    Lost = Count1-Count5-Count2;
   }
 }
-void Thread2b(void){
-  Count2 = 0;          
+void Thread2c(void){
+  OS_InitSemaphore(&Readyc,0);
+  Count1 = 0;    // number of times signal is called      
+  Count2 = 0;    
+  Count5 = 0;    // Count2 + Count5 should equal Count1  
+  NumCreated += OS_AddThread(&Thread5c,128,3); 
+  OS_AddPeriodicThread(&BackgroundThread1c,TIME_1MS,0); 
   for(;;){
-    PE1 ^= 0x02;       // heartbeat
-    Count2++;
+    OS_Wait(&Readyc);
+    Count2++;   // Count2 + Count5 should equal Count1
   }
 }
-void Thread3b(void){
+
+void Thread3c(void){
   Count3 = 0;          
   for(;;){
-    PE2 ^= 0x04;       // heartbeat
     Count3++;
   }
 }
-int main(void){  // Testmain2
+void Thread4c(void){ int i;
+  for(i=0;i<64;i++){
+    Count4++;
+    OS_Sleep(10);
+  }
+  OS_Kill();
+  Count4 = 0;
+}
+void BackgroundThread5c(void){   // called when Select button pushed
+  NumCreated += OS_AddThread(&Thread4c,128,3); 
+}
+      
+int main(void){   // Testmain3
+  Count4 = 0;          
   OS_Init();           // initialize, disable interrupts
-  PortE_Init();       // profile user threads
-	PortF_Init();
+// Count2 + Count5 should equal Count1
   NumCreated = 0 ;
-  NumCreated += OS_AddThread(&Thread1b,128,1); 
-  NumCreated += OS_AddThread(&Thread2b,128,2); 
-  NumCreated += OS_AddThread(&Thread3b,128,3); 
-  // Count1 Count2 Count3 should be equal on average
-  // counts are larger than testmain1
- 
+  OS_AddSW1Task(&BackgroundThread5c,2);
+  NumCreated += OS_AddThread(&Thread2c,128,2); 
+  NumCreated += OS_AddThread(&Thread3c,128,3); 
+  NumCreated += OS_AddThread(&Thread4c,128,3); 
   OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
   return 0;            // this never executes
 }

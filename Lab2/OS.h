@@ -6,7 +6,7 @@
 // You are free to change the syntax/organization of this file
 // You are required to implement the spirit of this OS
 
- 
+#include "stdint.h"
 #ifndef __OS_H
 #define __OS_H  1
 
@@ -15,6 +15,18 @@
 #define TIME_2MS    (2*TIME_1MS)  
 #define TIME_500US  (TIME_1MS/2)  
 #define TIME_250US  (TIME_1MS/5)  
+
+struct TCB{
+	uint32_t * localSp; //local stack pointer
+	struct TCB * nextTCB; //pointer to next TCB
+	uint8_t active;
+	uint32_t stack [128];
+	uint32_t id; //unique id
+	uint32_t sleepState; //flag
+	uint8_t needToWakeUp;
+	uint8_t priority; 
+	uint8_t blockedState; //flag
+};
 
 // feel free to change the type of semaphore, there are lots of good solutions
 struct  Sema4{
