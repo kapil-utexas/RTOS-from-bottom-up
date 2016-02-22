@@ -42,7 +42,7 @@ ARM Macro Assembler    Page 1
    32 00000006 4770            BX               LR
    33 00000008         
    34 00000008         StartOS
-   35 00000008 4813            LDR              R0, =RunPt
+   35 00000008 4812            LDR              R0, =RunPt
    36 0000000A 6802            LDR              R2, [R0]
    37 0000000C F8D2 D000       LDR              SP, [R2]    ;load localSP
    38 00000010 E8BD 0FF0       POP              {R4-R11}
@@ -71,48 +71,38 @@ ARM Macro Assembler    Page 2
 
    49 00000028         ;PendSV_Handler                ; 1) Saves R0-R3,R12,LR,P
                        C,PSR
-   50 00000028         
-   51 00000028         SysTick_Handler
-   52 00000028 B672            CPSID            I
-   53 0000002A 480C            LDR              R0, =PF3Address
-   54 0000002C 6801            LDR              R1, [R0]
-   55 0000002E 680B            LDR              R3,[R1]
-   56 00000030 F083 0208       EOR              R2, R3, #0x8
-   57 00000034 600A            STR              R2, [R1]
-   58 00000036         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
+   50 00000028         SysTick_Handler
+   51 00000028 B672            CPSID            I
+   52 0000002A 480B            LDR              R0, =PF3Address
+   53 0000002C 6801            LDR              R1, [R0]
+   54 0000002E 680B            LDR              R3,[R1]
+   55 00000030 F083 0208       EOR              R2, R3, #0x8
+   56 00000034 600A            STR              R2, [R1]
+   57 00000036         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
                        k because of interrupt
-   59 00000036 E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
+   58 00000036 E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
                                                             isters
-   60 0000003A 4807            LDR              R0, =RunPt  ;old run pointer
-   61 0000003C 6801            LDR              R1, [R0]    ;now R1 points the 
+   59 0000003A 4806            LDR              R0, =RunPt  ;old run pointer
+   60 0000003C 6801            LDR              R1, [R0]    ;now R1 points the 
                                                             the current TCB run
                                                             ning
-   62 0000003E         ;this means R1 = TCB.localSP  
-   63 0000003E F8C1 D000       STR              SP, [R1]    ;store stack into l
+   61 0000003E         ;this means R1 = TCB.localSP  
+   62 0000003E F8C1 D000       STR              SP, [R1]    ;store stack into l
                                                             ocal stack pointer 
                                                             of TCB
-   64 00000042         Check_Dead                           ;linked list traver
-                                                            sal until we find s
-                                                            omething not dead
-   65 00000042 6849            LDR              R1, [R1,#4] ;load next to run
-   66 00000044 688A            LDR              R2, [R1,#8] ;load active flag
-   67 00000046 2A00            CMP              R2, #0      ;check if thread is
-                                                             dead
-   68 00000048 D0FB            BEQ              Check_Dead  ;if dead, go to nex
-                                                            t thread until we f
-                                                            ind an active one
-   69 0000004A 6001            STR              R1, [R0]    ;update RunPt
-   70 0000004C F8D1 D000       LDR              SP, [R1]    ;R1 points to the f
+   63 00000042 6849            LDR              R1, [R1,#4] ;load nextpt
+   64 00000044 6001            STR              R1, [R0]    ;update RunPt
+   65 00000046 F8D1 D000       LDR              SP, [R1]    ;R1 points to the f
                                                             irst element of the
                                                              struct we want to 
                                                             switch to
-   71 00000050 E8BD 0FF0       POP              {R4-R11}    ;pop remainining re
+   66 0000004A E8BD 0FF0       POP              {R4-R11}    ;pop remainining re
                                                             gisters
-   72 00000054 B662            CPSIE            I
-   73 00000056 4770            BX               LR
-   74 00000058         
-   75 00000058                 ALIGN
-   76 00000058                 END
+   67 0000004E B662            CPSIE            I
+   68 00000050 4770            BX               LR
+   69 00000052         
+   70 00000052 00 00           ALIGN
+   71 00000054                 END
               00000000 
               00000000 
 Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\osasm.
@@ -132,14 +122,6 @@ Symbol: .text
    Uses
       None
 Comment: .text unused
-Check_Dead 00000042
-
-Symbol: Check_Dead
-   Definitions
-      At line 64 in file OSasm.s
-   Uses
-      At line 68 in file OSasm.s
-Comment: Check_Dead used once
 OS_DisableInterrupts 00000000
 
 Symbol: OS_DisableInterrupts
@@ -168,11 +150,11 @@ SysTick_Handler 00000028
 
 Symbol: SysTick_Handler
    Definitions
-      At line 51 in file OSasm.s
+      At line 50 in file OSasm.s
    Uses
       At line 20 in file OSasm.s
 Comment: SysTick_Handler used once
-6 symbols
+5 symbols
 
 
 
@@ -185,7 +167,7 @@ Symbol: PF3Address
    Definitions
       At line 15 in file OSasm.s
    Uses
-      At line 53 in file OSasm.s
+      At line 52 in file OSasm.s
 Comment: PF3Address used once
 RunPt 00000000
 
@@ -194,7 +176,7 @@ Symbol: RunPt
       At line 14 in file OSasm.s
    Uses
       At line 35 in file OSasm.s
-      At line 60 in file OSasm.s
+      At line 59 in file OSasm.s
 
 2 symbols
-341 symbols in table
+340 symbols in table

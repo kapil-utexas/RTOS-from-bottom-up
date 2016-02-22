@@ -38,116 +38,53 @@
 void EnableInterrupts(void);  // Enable interrupts
 void dummy(void){}; //dummy function for user task
 
-//---------------------OutCRLF---------------------
-// Output a CR,LF to UART to go to a new line
-// Input: none
-// Output: none
-void OutCRLF(void){
-  UART_OutChar(CR);
-  UART_OutChar(LF);
+//*******************Initial TEST**********
+// This is the simplest configuration, test this first, (Lab 1 part 1)
+// run this with 
+// no UART interrupts
+// no SYSTICK interrupts
+// no timer interrupts
+// no switch interrupts
+// no ADC serial port or LCD output
+// no calls to semaphores
+unsigned long Count1;   // number of times thread1 loops
+unsigned long Count2;   // number of times thread2 loops
+unsigned long Count3;   // number of times thread3 loops
+unsigned long Count4;   // number of times thread4 loops
+unsigned long Count5;   // number of times thread5 loops
+void Thread1(void){
+  Count1 = 0;          
+  for(;;){
+    PE0 ^= 0x01;       // heartbeat
+    Count1++;
+    OS_Suspend();      // cooperative multitasking
+  }
 }
-	
-
-void LCD_test(uint8_t device, char * message)
-{
-	ST7735_Message (device, 0, message, strlen(message));
+void Thread2(void){
+  Count2 = 0;          
+  for(;;){
+    PE1 ^= 0x02;       // heartbeat
+    Count2++;
+    OS_Suspend();      // cooperative multitasking
+  }
 }
-int main()
-{
-	uint32_t stringSize;
-	uint32_t adcVoltage;
-	uint8_t deviceChosen;
-	uint8_t taskAddedBefore = 0;
-	char message[MESSAGELENGTH] = "";
-  PLL_Init(Bus80MHz);                  // set system clock to 80 MHz
-  ST7735_InitR(INITR_REDTAB);				   // initialize LCD
-	ADC0_InitTimer0ATriggerSeq3(0,800000);
-	UART_Init();              					 // initialize UART
-	EnableInterrupts();
-	OutCRLF();
-	UART_OutString("Interpreter: ");
-	while(1){
-		OutCRLF();
-		UART_OutString("Commands: 0 - ADC, 1 - LCD, 2 - Time");
-		OutCRLF();
-		switch(UART_InUDec())
-		{
-			case 0:
-				OutCRLF();
-				UART_OutString("ADC Voltage = ");
-				ADC_Open(2);
-				adcVoltage = (ADC_In() *3300) / 4095; //convert to mV
-				UART_OutUDec(adcVoltage);
-				break;
-			case 1:
-				OutCRLF();
-				UART_OutString("Enter LCD device 0 or 1: ");
-				deviceChosen = UART_InUDec();
-				OutCRLF();
-				UART_OutString("Enter message: ");
-				UART_InString(message, MESSAGELENGTH);
-				OutCRLF();
-				stringSize = strlen(message);
-				if(stringSize > 20)
-				{
-					OutCRLF();
-					UART_OutString("String too long, only 20 chars will be printed...");
-					OutCRLF();
-				}
-				LCD_test(deviceChosen, message); //prints to lcd
-				break;
-			case 2:
-				if(!taskAddedBefore){
-					OS_AddPeriodicThread(dummy, 1000, 1);
-					taskAddedBefore = 1;
-				}
-				OutCRLF();
-				UART_OutUDec(OS_ReadPeriodicTime());
-				break;
-			default:
-				UART_OutString("Incorrect command!");
-				break;
-		}
-
-		//adcSample = ADC_In();
-		//ST7735_SetCursor(0,0);
-		//ST7735_OutUDec(adcSample);
-	
-	}
+void Thread3(void){
+  Count3 = 0;          
+  for(;;){
+    PE2 ^= 0x04;       // heartbeat
+    Count3++;
+    OS_Suspend();      // cooperative multitasking
+  }
 }
 
-
-
-//debug code for UART
-int main2(void){
-  char i;
-  char string[20];  // global to assist in debugging
-  uint32_t n;
-  PLL_Init(Bus50MHz);       // set system clock to 50 MHz
-  UART_Init();              // initialize UART
-  OutCRLF();
-  for(i='A'; i<='Z'; i=i+1){// print the uppercase alphabet
-    UART_OutChar(i);
-  }
-  OutCRLF();
-  UART_OutChar(' ');
-  for(i='a'; i<='z'; i=i+1){// print the lowercase alphabet
-    UART_OutChar(i);
-  }
-  OutCRLF();
-  UART_OutChar('-');
-  UART_OutChar('-');
-  UART_OutChar('>');
-  while(1){
-    UART_OutString("InString: ");
-    UART_InString(string,19);
-    UART_OutString(" OutString="); UART_OutString(string); OutCRLF();
-
-    UART_OutString("InUDec: ");  n=UART_InUDec();
-    UART_OutString(" OutUDec="); UART_OutUDec(n); OutCRLF();
-
-    UART_OutString("InUHex: ");  n=UART_InUHex();
-    UART_OutString(" OutUHex="); UART_OutUHex(n); OutCRLF();
-
-  }
+int Testmain1(void){  // Testmain1
+  OS_Init();          // initialize, disable interrupts
+  PortE_Init();       // profile user threads
+  NumCreated = 0 ;
+  NumCreated += OS_AddThread(&Thread1,128,1); 
+  NumCreated += OS_AddThread(&Thread2,128,2); 
+  NumCreated += OS_AddThread(&Thread3,128,3); 
+  // Count1 Count2 Count3 should be equal or off by one at all times
+  OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
+  return 0;            // this never executes
 }

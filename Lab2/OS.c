@@ -33,7 +33,11 @@ struct TCB{
 };
 
 
-struct TCB * RunPt;
+struct TCB * RunPt; //scheduler pointer
+struct TCB * DeadPt; //dead threads pointer
+struct TCB * SleepPt; //sleeping threads pointer
+struct TCB * SchedulerPt; //sleeping threads pointer
+
 struct TCB threadPool[NUMBEROFTHREADS];
 
 //OSasm definitions
@@ -54,10 +58,15 @@ void OS_Init()
 	//ADC_Init(0);
 	//UART_Init();              					 // initialize UART
 	//construct linked list
-	for (counter = 0; counter<NUMBEROFTHREADS; counter++)
+	for (counter = 0; counter<NUMBEROFTHREADS - 1; counter++)
 	{
-		threadPool[counter].nextTCB = &threadPool[(counter + 1) % NUMBEROFTHREADS ]; //address of next TCB
+		threadPool[counter].nextTCB = &threadPool[(counter + 1)]; //address of next TCB
 	}
+	threadPool[NUMBEROFTHREADS - 1].nextTCB = '\0'; 
+	DeadPt = &threadPool[0]; //point to first element of not active threads 
+	RunPt = '\0';
+	SchedulerPt = '\0';
+	SleepPt = '\0';
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
@@ -71,7 +80,7 @@ void OS_Init()
 // In Lab 3, you should implement the user-defined TimeSlice field
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
-	RunPt = &threadPool[0]; //make the first thread active
+	RunPt = SchedulerPt; //make the first thread active
 	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
 	NVIC_ST_CTRL_R = 0x07; //enable systick
 	StartOS();
@@ -224,6 +233,31 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 	(*toFix).stack[stackSize - 15]= 0x05050505; //R5
 	(*toFix).stack[stackSize - 16]= 0x04040404; //R4
 }
+
+static void addDeadToScheduler()
+{
+	if(SchedulerPt == '\0')
+	{
+		SchedulerPt = DeadPt;
+		DeadPt = (*DeadPt).nextTCB;
+		(*SchedulerPt).nextTCB = SchedulerPt;
+		
+	}
+	else
+	{
+		struct TCB * temp = SchedulerPt; //sleeping threads pointer
+		while((*temp).nextTCB != (SchedulerPt))
+		{
+			temp = (*temp).nextTCB;
+		}
+		//now we are at the last node of the list
+		(*temp).nextTCB = DeadPt;
+		DeadPt = (*DeadPt).nextTCB;
+		temp = (*temp).nextTCB; //get the element you just added to the list
+		(*temp).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+	}
+}
+
 //******** OS_AddThread *************** 
 // add a foregound thread to the scheduler
 // Inputs: pointer to a void/void foreground task
@@ -236,7 +270,7 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 uint8_t uniqueId=0; //make unique ids
 int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long priority)
 {
-	//threadPool[uniqueId].nextTCB = &threadPool[(uniqueId + 1) % NUMBEROFTHREADS ]; //address of next TCB
+	/*
 	threadPool[uniqueId].id = uniqueId; //unique id
 	threadPool[uniqueId].active = 1;
 	threadPool[uniqueId].sleepState = 0; //flag
@@ -244,8 +278,18 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	threadPool[uniqueId].blockedState = 0; //flag
 	SetInitialStack(&threadPool[uniqueId], stackSize);
 	threadPool[uniqueId].stack[stackSize - 2] = (uint32_t)task; //push PC
-	//RunPt = &threadPool[uniqueId];
 	uniqueId++;
+	*/
+	//we will take the first thread from the dead pool
+	(DeadPt)->id = uniqueId; //unique id
+	(DeadPt)->active = 1;
+	(DeadPt)->sleepState = 0; //flag
+	(DeadPt)->priority = priority; 
+	(DeadPt)->blockedState = 0; //flag
+	SetInitialStack(DeadPt, stackSize);
+	(DeadPt)->stack[stackSize - 2] = (uint32_t)task; //push PC
+	uniqueId++;
+	addDeadToScheduler();
 	return 1;
 }
 

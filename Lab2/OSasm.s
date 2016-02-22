@@ -47,7 +47,6 @@ StartOS
 
 
 ;PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
-
 SysTick_Handler
 	CPSID I
 	LDR R0, =PF3Address
@@ -61,11 +60,7 @@ SysTick_Handler
 	LDR R1, [R0] ;now R1 points the the current TCB running
 				 ;this means R1 = TCB.localSP 	
 	STR SP, [R1] ;store stack into local stack pointer of TCB
-Check_Dead ;linked list traversal until we find something not dead
-	LDR R1, [R1,#4]	;load next to run
-	LDR R2, [R1,#8]	;load active flag
-	CMP R2, #0 ;check if thread is dead
-	BEQ Check_Dead ;if dead, go to next thread until we find an active one
+	LDR R1, [R1,#4] ;load nextpt
 	STR R1, [R0] ;update RunPt
 	LDR SP, [R1] ;R1 points to the first element of the struct we want to switch to
 	POP {R4-R11} ;pop remainining registers
