@@ -17,7 +17,7 @@
 
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
-#define NUMBEROFTHREADS 4
+#define NUMBEROFTHREADS 10
 
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
@@ -231,13 +231,13 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 	(*toFix).stack[stackSize - 16]= 0x04040404; //R4
 }
 
-static void addDeadToScheduler()
+static void addThreadToScheduler(struct TCB ** from)
 {
 
 	if(SchedulerPt == '\0')
 	{
-		SchedulerPt = DeadPt;
-		DeadPt = (*DeadPt).nextTCB;
+		SchedulerPt = *from;
+		*from = (*(*from)).nextTCB;
 		(*SchedulerPt).nextTCB = SchedulerPt;
 		
 	}
@@ -249,8 +249,8 @@ static void addDeadToScheduler()
 			temp = (*temp).nextTCB;
 		}
 		//now we are at the last node of the list
-		(*temp).nextTCB = DeadPt;
-		DeadPt = (*DeadPt).nextTCB;
+		(*temp).nextTCB = *from;
+		*from = (*(*from)).nextTCB;
 		temp = (*temp).nextTCB; //get the element you just added to the list
 		(*temp).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
 	}
@@ -290,7 +290,7 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	SetInitialStack(DeadPt, stackSize);
 	(DeadPt)->stack[stackSize - 2] = (uint32_t)task; //push PC
 	uniqueId++;
-	addDeadToScheduler();
+	addThreadToScheduler(&DeadPt);
 	return 1;
 }
 
@@ -305,7 +305,7 @@ void OS_Suspend(){
 		NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
 }
 
-static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
+static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 {
 	struct TCB * removed;
 	struct TCB * temp;
@@ -316,6 +316,10 @@ static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
 	
 	if(RunPt == temp) //first element
 	{
+		if(schedulerCount == 0)
+		{
+			return;
+		}
 		if(schedulerCount == 1)
 		{
 			removed = SchedulerPt; //store before we remove
@@ -343,7 +347,7 @@ static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
 			(*temp).nextTCB = temp->nextTCB->nextTCB; //remove from linked list
 	}
 	//now we have the node we took out in the "removed" variable
-	if(toAdd == SleepPt) //if putting thread to sleep need to update flag
+	if(*toAdd == SleepPt) //if putting thread to sleep need to update flag
 	{
 		(*removed).sleepState = sleepTime;
 		if(sleepTime == 0)
@@ -351,14 +355,24 @@ static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
 			(*removed).needToWakeUp = 1;
 		}
 	}
-	temp = toAdd;
-	while((*temp).nextTCB != '\0')
+	temp = *toAdd;
+	if(temp != '\0')
 	{
+		while((*temp).nextTCB != '\0')
+		{
+			temp = (*temp).nextTCB;
+		}
+		(*temp).nextTCB = removed;
 		temp = (*temp).nextTCB;
+		(*temp).nextTCB = '\0';
 	}
-	(*temp).nextTCB = removed;
-	temp = (*temp).nextTCB;
-	(*temp).nextTCB = '\0';
+	else
+	{
+		*toAdd = removed;
+		(*removed).nextTCB = '\0';
+	}
+	
+	RunPt= SchedulerPt; //hax
 	schedulerCount--;
 }
 
@@ -368,7 +382,9 @@ static void threadRemover(struct TCB * toAdd, unsigned long sleepTime)
 // output: none
 void OS_Kill(void)
 {
-	threadRemover(DeadPt, 0); //parameter 0 will be ignored
+	OS_DisableInterrupts();
+	threadRemover(&DeadPt, 0); //parameter 0 will be ignored
+	OS_EnableInterrupts();
 	deadCount++;
 }
 
@@ -381,7 +397,9 @@ void OS_Kill(void)
 // OS_Sleep(0) implements cooperative multitasking
 void OS_Sleep(unsigned long sleepTime)
 {
-	threadRemover(SleepPt, sleepTime * 2);
+	OS_DisableInterrupts();
+	threadRemover(&SleepPt, sleepTime * 2);
+	OS_EnableInterrupts();
 	sleepCount++;
 }
 
@@ -406,4 +424,58 @@ int OS_AddSW1Task(void(*task)(void), unsigned long priority)
 		}
 		Switch_Init(task,priority);
 		return 1;
+}
+
+static void wakeUpThread(struct TCB * thread)
+{
+	struct TCB * prevToDelete = SleepPt;
+	(*thread).sleepState = 0;
+	(*thread).needToWakeUp = 0;
+	(*thread).active = 1;
+	while((*prevToDelete).nextTCB != thread)
+	{
+		prevToDelete = (*prevToDelete).nextTCB;
+	}
+	if(SchedulerPt == '\0')
+	{
+		SchedulerPt = (*prevToDelete).nextTCB;
+		(*prevToDelete).nextTCB = prevToDelete->nextTCB->nextTCB;
+		(*SchedulerPt).nextTCB = SchedulerPt;
+	}
+	else
+	{
+		struct TCB * temp = SchedulerPt; //sleeping threads pointer
+		while((*temp).nextTCB != (SchedulerPt))
+		{
+			temp = (*temp).nextTCB;
+		}
+		//now we are at the last node of the list
+		(*temp).nextTCB = thread;
+		(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
+		(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+	}
+	schedulerCount++;
+	sleepCount--;
+	
+}
+
+void SysTick_Handler(void)
+{
+	struct TCB * temp;
+	struct TCB * toRestore;
+	temp = SleepPt;
+	while(temp!= '\0')
+	{
+		(*temp).sleepState -= 2;
+		if( (*temp).sleepState <=0  && (*temp).needToWakeUp != 1) //if sleep was given a time to wake up 
+		{
+			toRestore = (*temp).nextTCB; //since we are taking node out, need to restore where we were
+			wakeUpThread(temp); //take node out of sleep and put into scheduler
+			temp = toRestore; //restore to be able to go to next thread
+		}			
+		temp = (*temp).nextTCB;
+	}
+	NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
+	temp = temp;
+	//do we need to ack pendsv flag?
 }

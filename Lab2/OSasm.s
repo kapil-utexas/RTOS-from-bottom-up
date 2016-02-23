@@ -15,9 +15,8 @@
 		EXTERN  PF3Address
         EXPORT  OS_DisableInterrupts
         EXPORT  OS_EnableInterrupts
-        ;EXPORT  PendSV_Handler
+        EXPORT  PendSV_Handler
 		EXPORT  StartOS
-		EXPORT  SysTick_Handler
 			
 			
 
@@ -46,14 +45,13 @@ StartOS
 	
 
 
-;PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
-SysTick_Handler
+PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
 	CPSID I
-	LDR R0, =PF3Address
-	LDR R1, [R0]
-	LDR R3,[R1]
-	EOR R2, R3, #0x8
-	STR R2, [R1]
+	;LDR R0, =PF3Address
+	;LDR R1, [R0]
+	;LDR R3,[R1]
+	;EOR R2, R3, #0x8
+	;STR R2, [R1]
 	;we can assume that R0-R3, R12, LR, PC, PSRX are in stack because of interrupt
 	PUSH{R4-R11} ;push remaining registers
 	LDR R0, =RunPt ;old run pointer
