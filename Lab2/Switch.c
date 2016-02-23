@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include "../inc/tm4c123gh6pm.h"
 #include "Switch.h"
+#include "OS.h"
 #define PF4                     (*((volatile uint32_t *)0x40025040))
 void DisableInterrupts(void); // Disable interrupts
 void EnableInterrupts(void);  // Enable interrupts
@@ -39,20 +40,9 @@ volatile static unsigned long Release;   // true on release
 volatile static unsigned long Last;      // previous
 void (*TouchTask)(void);    // user function to be executed on touch
 void (*ReleaseTask)(void);  // user function to be executed on release
-static void Timer0Arm(void){
-  TIMER0_CTL_R = 0x00000000;    // 1) disable TIMER0A during setup
-  TIMER0_CFG_R = 0x00000000;    // 2) configure for 32-bit mode
-  TIMER0_TAMR_R = 0x0000001;    // 3) 1-SHOT mode
-  TIMER0_TAILR_R = 160000;      // 4) 10ms reload value
-  TIMER0_TAPR_R = 0;            // 5) bus clock resolution
-  TIMER0_ICR_R = 0x00000001;    // 6) clear TIMER0A timeout flag
-  TIMER0_IMR_R = 0x00000001;    // 7) arm timeout interrupt
-  NVIC_PRI4_R = (NVIC_PRI4_R&0x00FFFFFF)|0x80000000; // 8) priority 4
-// interrupts enabled in the main program after all devices initialized
-// vector number 35, interrupt number 19
-  NVIC_EN0_R = 1<<19;           // 9) enable IRQ 19 in NVIC
-  TIMER0_CTL_R = 0x00000001;    // 10) enable TIMER0A
-}
+
+static uint8_t taskPriority;
+
 static void GPIOArm(void){
   GPIO_PORTF_ICR_R = 0x10;      // (e) clear flag4
   GPIO_PORTF_IM_R |= 0x10;      // (f) arm interrupt on PF4 *** No IME bit as mentioned in Book ***
@@ -63,7 +53,7 @@ static void GPIOArm(void){
 // Inputs:  pointer to a function to call on touch (falling edge),
 //          pointer to a function to call on release (rising edge)
 // Outputs: none 
-void Switch_Init(void(*touchtask)(void), void(*releasetask)(void)){
+void Switch_Init(void(*touchtask)(void), uint8_t priority){
   // **** general initialization ****
   SYSCTL_RCGCGPIO_R |= 0x00000020; // (a) activate clock for port F
   while((SYSCTL_PRGPIO_R & 0x00000020) == 0){};
@@ -76,14 +66,20 @@ void Switch_Init(void(*touchtask)(void), void(*releasetask)(void)){
   GPIO_PORTF_IS_R &= ~0x10;     // (d) PF4 is edge-sensitive
   GPIO_PORTF_IBE_R |= 0x10;     //     PF4 is both edges
   GPIOArm();
-
-  SYSCTL_RCGCTIMER_R |= 0x01;   // 0) activate TIMER0
   TouchTask = touchtask;           // user function 
-  ReleaseTask = releasetask;       // user function 
   Touch = 0;                       // allow time to finish activating
   Release = 0;
   Last = PF4;                      // initial switch state
+	taskPriority = priority;
  }
+
+ void static DebounceTask(void){ 
+	OS_Sleep(10); //wait to stabilize
+	Last = PF4;
+	GPIO_PORTF_ICR_R |= 0x10;
+	GPIO_PORTF_IM_R |= 0x40; //enable interrupt	
+}
+ 
 // Interrupt on rising or falling edge of PF4 (CCP0)
 void GPIOPortF_Handler(void){
   GPIO_PORTF_IM_R &= ~0x10;     // disarm interrupt on PF4 
@@ -91,36 +87,10 @@ void GPIOPortF_Handler(void){
     Touch = 1;       // touch occurred
     (*TouchTask)();  // execute user task
   }
-  else{
-    Release = 1;       // release occurred
-    (*ReleaseTask)();  // execute user task
-  }
-  Timer0Arm(); // start one shot
-}
-// Interrupt 10 ms after rising edge of PF4
-void Timer0A_Handler(void){
-  TIMER0_IMR_R = 0x00000000;    // disarm timeout interrupt
-  Last = PF4;  // switch state
-  GPIOArm();   // start GPIO
+	OS_AddThread(&DebounceTask,128,taskPriority);
+	
 }
 
-// Wait for switch to be pressed 
-// There will be minimum time delay from touch to when this function returns
-// Inputs:  none
-// Outputs: none 
-void Switch_WaitPress(void){
-  while(Touch==0){}; // wait for press
-  Touch = 0;  // set up for next time
-}
-
-// Wait for switch to be released 
-// There will be minimum time delay from release to when this function returns
-// Inputs:  none
-// Outputs: none 
-void Switch_WaitRelease(void){
-  while(Release==0){}; // wait
-  Release = 0; // set up for next time
-}
 
 // Return current value of the switch 
 // Repeated calls to this function may bounce during touch and release events

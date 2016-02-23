@@ -13,10 +13,11 @@
 #include "ST7735.h"
 #include "UART.h"
 #include "ADC.h"
+#include "Switch.h"
 
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
-#define NUMBEROFTHREADS 3
+#define NUMBEROFTHREADS 4
 
 static void(*taskToDo)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
@@ -43,6 +44,7 @@ void StartOS(void);
 // initialize OS controlled I/O: serial, ADC, systick, LaunchPad I/O and timers 
 // input:  none
 // output: none
+void dummy(void){}
 void OS_Init()
 {
 	uint8_t counter = 0;
@@ -398,5 +400,10 @@ void OS_Sleep(unsigned long sleepTime)
 //           determines the relative priority of these four threads
 int OS_AddSW1Task(void(*task)(void), unsigned long priority)
 {
-	
+		if(DeadPt == '\0')
+		{
+			return 0;
+		}
+		Switch_Init(task,priority);
+		return 1;
 }

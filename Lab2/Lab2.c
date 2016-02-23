@@ -153,6 +153,9 @@ void Thread4c(void){ int i;
   OS_Kill();
   Count4 = 0;
 }
+
+
+
 void BackgroundThread5c(void){   // called when Select button pushed
   NumCreated += OS_AddThread(&Thread4c,128,3); 
 }
