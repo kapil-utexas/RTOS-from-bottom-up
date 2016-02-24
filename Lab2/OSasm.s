@@ -58,14 +58,14 @@ PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
 				 ;this means R1 = TCB.localSP 	
 	STR SP, [R1] ;store stack into local stack pointer of TCB
 	;need to check if we went to sleep or killed 
-	LDR R2, =switched
-	LDR R3, [R2] ;loadvalue of flag
+	LDR R2, =switched ;8bit variable
+	LDRB R3, [R2] ;loadvalue of flag
 	CMP R3, #0
 	BNE Switch_Routine
 	BEQ NoSwitch_Routine
 Switch_Routine
 	MOV R3,#0
-	STR R3, [R2] ;clear the flag
+	STRB R3, [R2] ;clear the flag
 	LDR R1, =nextBeforeSwitch
 	LDR R1, [R1] ;now points to tcb that we want to run
 	STR R1, [R0] ;update runPT

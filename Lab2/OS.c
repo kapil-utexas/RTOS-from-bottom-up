@@ -19,7 +19,7 @@
 #define STACKSIZE 256
 #define NUMBEROFTHREADS 10
 
-static void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
+void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
 int32_t StartCritical(void);
 void EndCritical(int32_t primask);
@@ -84,12 +84,13 @@ void OS_Launch(unsigned long theTimeSlice){
 	StartOS();
 	while(1);
 }
-
+uint32_t howManyTimes = 0;
 static void Timer1A_Init(unsigned long period, void(*task)(void), unsigned long priority){
 	volatile uint32_t delay;
 	SYSCTL_RCGCTIMER_R |= 0x02;      // activate timer1
 	delay = SYSCTL_RCGCTIMER_R;          // allow time to finish activating
 	PeriodicTask = task;          // user function
+	howManyTimes++;
 	TIMER1_CTL_R = 0x00000000; // disable timer1A during setup
 	TIMER1_CFG_R = 0x00000000;                // configure for 32-bit timer mode
 	TIMER1_TAMR_R = 0x00000002; //activate periodic timer mode 
