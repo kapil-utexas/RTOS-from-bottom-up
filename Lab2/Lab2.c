@@ -146,16 +146,13 @@ void Thread3c(void){
   }
 }
 void Thread4c(void){ int i;
-  //for(i=0;i<64;i++){
-		for(;;){
+  for(i=0;i<64;i++){
     Count4++;
     OS_Sleep(10);
   }
-//  OS_Kill();
+  OS_Kill();
   Count4 = 0;
 }
-
-
 
 
 void BackgroundThread5c(void){   // called when Select button pushed
@@ -167,8 +164,8 @@ int main(void){   // Testmain3
   OS_Init();           // initialize, disable interrupts
 // Count2 + Count5 should equal Count1
   NumCreated = 0 ;
-  //OS_AddSW1Task(&BackgroundThread5c,2);
-  //NumCreated += OS_AddThread(&Thread2c,128,2); 
+  OS_AddSW1Task(&BackgroundThread5c,2);
+  NumCreated += OS_AddThread(&Thread2c,128,2); 
   NumCreated += OS_AddThread(&Thread3c,128,3); 
   NumCreated += OS_AddThread(&Thread4c,128,3); 
   OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here

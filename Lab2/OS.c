@@ -14,14 +14,15 @@
 #include "UART.h"
 #include "ADC.h"
 #include "Switch.h"
-
+#include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
 #define NUMBEROFTHREADS 10
 
-static void(*taskToDo)(void); //function pointer which takes void argument and returns void
+static void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
 static uint32_t timerCounter = 0;
-
+int32_t StartCritical(void);
+void EndCritical(int32_t primask);
 
 struct TCB * RunPt; //scheduler pointer
 
@@ -84,25 +85,27 @@ void OS_Launch(unsigned long theTimeSlice){
 	while(1);
 }
 
-static void Timer1A_Init(unsigned long period){
+static void Timer1A_Init(unsigned long period, void(*task)(void), unsigned long priority){
 	volatile uint32_t delay;
 	SYSCTL_RCGCTIMER_R |= 0x02;      // activate timer1
 	delay = SYSCTL_RCGCTIMER_R;          // allow time to finish activating
-	TIMER1_CTL_R &= ~TIMER_CTL_TAEN; // disable timer1A during setup
-	TIMER1_CFG_R = 0;                // configure for 32-bit timer mode
-	TIMER1_TAMR_R = TIMER_TAMR_TAMR_PERIOD; //activate periodic timer mode 
+	PeriodicTask = task;          // user function
+	TIMER1_CTL_R = 0x00000000; // disable timer1A during setup
+	TIMER1_CFG_R = 0x00000000;                // configure for 32-bit timer mode
+	TIMER1_TAMR_R = 0x00000002; //activate periodic timer mode 
   TIMER1_TAILR_R = period - 1;         // start value 
-  TIMER1_IMR_R |= TIMER_IMR_TATOIM;// enable timeout (rollover) interrupt
-  TIMER1_ICR_R = TIMER_ICR_TATOCINT;// clear timer1A timeout flag
-  TIMER1_CTL_R |= TIMER_CTL_TAEN;  // enable timer1A 32-b, periodic, interrupts
+	TIMER1_TAPR_R = 0;            // 5) bus clock resolution
+  TIMER1_IMR_R = 0x00000001;// enable timeout (rollover) interrupt
+  TIMER1_ICR_R = 0x00000001;// clear timer1A timeout flag
+	priority &= 0x7; //keep the last 3 bits
+//	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF1FFF)| priority<<15 ; // bit 15, 14, 13 for Timer1A 
+	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF00FF)| priority<<15; // 8) priority 4
+  NVIC_EN0_R |=	1<<21;              // enable interrupt 21 in NVIC in a friendly manner
+  TIMER1_CTL_R |= 0x00000001;  // enable timer1A 32-b, periodic, interrupts
 	
 }
 
-int millisecondsToCount(uint32_t period)
-{
-	return period * MILLISECONDCOUNT; 
-	
-}
+
 
 //input:
 //task: pointer to a function
@@ -110,14 +113,9 @@ int millisecondsToCount(uint32_t period)
 //priority: will be a three bit number from 0 to 7
 //Question: uin8_t fine? priority is only 3 bits 
 int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long priority){
-	//enable timer but not interrupts
-	Timer1A_Init(millisecondsToCount(period)); //converts the period from milliseconds to cycles
-	// enable interrupts for timer 
-	priority &= 0x7; //keep the last 3 bits
-	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF1FFF)| priority<<15 ; // bit 15, 14, 13 for Timer1A 
-  NVIC_EN0_R |=	1<<21;              // enable interrupt 21 in NVIC in a friendly manner
-	//Set taskToDo global variable
-	taskToDo = task;
+	OS_DisableInterrupts();
+	Timer1A_Init(period, task, priority); //converts the period from milliseconds to cycles
+	OS_EnableInterrupts();
 	return 0;
 }
 
@@ -135,9 +133,11 @@ unsigned long OS_ReadPeriodicTime(){
 
 void Timer1A_Handler(){
 	TIMER1_ICR_R = TIMER_ICR_TATOCINT;  // acknowledge timer1A timeout
+	OS_DisableInterrupts();
+	void (*temp)(void) = &BackgroundThread1c;
 	timerCounter++;
-	//call the task set at initialization
-	taskToDo();
+	(*temp)();
+	OS_EnableInterrupts();
 }
 
 // ******** OS_InitSemaphore ************
@@ -176,9 +176,10 @@ void OS_Wait(Sema4Type *semaPt)
 // output: none
 void OS_Signal(Sema4Type *semaPt)
 {
-	OS_DisableInterrupts();
+	int32_t status;
+	status = StartCritical();
 	(*semaPt).Value ++;
-	OS_EnableInterrupts();
+	EndCritical(status );
 
 }
 
@@ -321,12 +322,13 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 	{
 		if(schedulerCount == 0)
 		{
-			return;
+			while(1){};
 		}
 		if(schedulerCount == 1)
 		{
 			removed = SchedulerPt; //store before we remove
 			SchedulerPt = '\0';
+			while(1){};
 		}
 		else //remove and fix
 		{
@@ -338,6 +340,7 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 			(*temp).nextTCB = (*SchedulerPt).nextTCB;
 			removed = SchedulerPt; //store before we remove
 			SchedulerPt = (*SchedulerPt).nextTCB;
+			nextBeforeSwitch = SchedulerPt; //hax
 		}
 	}
 	else //not the first element, could be middle or end (theres no end in circular)
@@ -346,10 +349,11 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 			{
 				temp = (*temp).nextTCB;
 			}
+			nextBeforeSwitch = temp->nextTCB->nextTCB; //hax
 			removed = (*temp).nextTCB;
 			(*temp).nextTCB = (*(*temp).nextTCB).nextTCB; //remove from linked list
 	}
-	nextBeforeSwitch= temp; //hax
+	
 	//now we have the node we took out in the "removed" variable
 	if(*toAdd == SleepPt) //if putting thread to sleep need to update flag
 	{
@@ -441,27 +445,51 @@ static void wakeUpThread(struct TCB * thread)
 	(*thread).sleepState = 0;
 	(*thread).needToWakeUp = 0;
 	(*thread).active = 1;
-	while((*prevToDelete).nextTCB != thread)
+	if(prevToDelete == thread) //if its the first element
 	{
-		prevToDelete = (*prevToDelete).nextTCB;
-	}
-	if(SchedulerPt == '\0')
-	{
-		SchedulerPt = (*prevToDelete).nextTCB;
-		(*prevToDelete).nextTCB = prevToDelete->nextTCB->nextTCB;
-		(*SchedulerPt).nextTCB = SchedulerPt;
+		if(SchedulerPt == '\0')
+		{
+			SchedulerPt = thread; 
+			SleepPt = SleepPt->nextTCB; //remove from sleep pool
+			(*SchedulerPt).nextTCB = SchedulerPt; //point to itself
+		}
+		else
+		{
+			struct TCB * temp = SchedulerPt; //sleeping threads pointer
+			while((*temp).nextTCB != (SchedulerPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			//now we are at the last node of the list
+			(*temp).nextTCB = thread;
+			SleepPt = SleepPt->nextTCB; //remove from sleep pool
+			(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+		}
 	}
 	else
 	{
-		struct TCB * temp = SchedulerPt; //sleeping threads pointer
-		while((*temp).nextTCB != (SchedulerPt))
+		while((*prevToDelete).nextTCB != thread)
 		{
-			temp = (*temp).nextTCB;
+			prevToDelete = (*prevToDelete).nextTCB;
 		}
-		//now we are at the last node of the list
-		(*temp).nextTCB = thread;
-		(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
-		(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+		if(SchedulerPt == '\0')
+		{
+			SchedulerPt = (*prevToDelete).nextTCB;
+			(*prevToDelete).nextTCB = prevToDelete->nextTCB->nextTCB;
+			(*SchedulerPt).nextTCB = SchedulerPt;
+		}
+		else
+		{
+			struct TCB * temp = SchedulerPt; //sleeping threads pointer
+			while((*temp).nextTCB != (SchedulerPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			//now we are at the last node of the list
+			(*temp).nextTCB = thread;
+			(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
+			(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+		}
 	}
 	schedulerCount++;
 	sleepCount--;
@@ -481,7 +509,9 @@ void traverseSleep(void)
 			toRestore = (*temp).nextTCB; //since we are taking node out, need to restore where we were
 			wakeUpThread(temp); //take node out of sleep and put into scheduler
 			temp = toRestore; //restore to be able to go to next thread
-		}			
+		}		
+		if(temp  == '\0')
+			break;
 		temp = (*temp).nextTCB;
 	}	
 }

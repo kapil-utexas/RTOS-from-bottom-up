@@ -73,11 +73,12 @@ void Switch_Init(void(*touchtask)(void), uint8_t priority){
 	taskPriority = priority;
  }
 
- void static DebounceTask(void){ 
+ void DebounceTask(void){ 
 	OS_Sleep(10); //wait to stabilize
 	Last = PF4;
 	GPIO_PORTF_ICR_R |= 0x10;
-	GPIO_PORTF_IM_R |= 0x40; //enable interrupt	
+	GPIO_PORTF_IM_R |= 0x10; //enable interrupt	
+	OS_Kill();
 }
  
 // Interrupt on rising or falling edge of PF4 (CCP0)
