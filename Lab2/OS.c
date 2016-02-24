@@ -305,6 +305,9 @@ void OS_Suspend(){
 		NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
 }
 
+
+uint8_t switched = 0;
+struct TCB * nextBeforeSwitch;
 static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 {
 	struct TCB * removed;
@@ -344,8 +347,9 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 				temp = (*temp).nextTCB;
 			}
 			removed = (*temp).nextTCB;
-			(*temp).nextTCB = temp->nextTCB->nextTCB; //remove from linked list
+			(*temp).nextTCB = (*(*temp).nextTCB).nextTCB; //remove from linked list
 	}
+	nextBeforeSwitch= temp; //hax
 	//now we have the node we took out in the "removed" variable
 	if(*toAdd == SleepPt) //if putting thread to sleep need to update flag
 	{
@@ -355,6 +359,7 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 			(*removed).needToWakeUp = 1;
 		}
 	}
+	
 	temp = *toAdd;
 	if(temp != '\0')
 	{
@@ -372,7 +377,6 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 		(*removed).nextTCB = '\0';
 	}
 	
-	RunPt= SchedulerPt; //hax
 	schedulerCount--;
 }
 
@@ -384,8 +388,10 @@ void OS_Kill(void)
 {
 	OS_DisableInterrupts();
 	threadRemover(&DeadPt, 0); //parameter 0 will be ignored
-	OS_EnableInterrupts();
+	switched = 1;
 	deadCount++;
+	OS_EnableInterrupts();
+	OS_Suspend();
 }
 
 // ******** OS_Sleep ************
@@ -399,8 +405,11 @@ void OS_Sleep(unsigned long sleepTime)
 {
 	OS_DisableInterrupts();
 	threadRemover(&SleepPt, sleepTime * 2);
-	OS_EnableInterrupts();
+	switched = 1;
 	sleepCount++;
+	OS_EnableInterrupts();
+	OS_Suspend();
+
 }
 
 //******** OS_AddSW1Task *************** 
@@ -459,7 +468,7 @@ static void wakeUpThread(struct TCB * thread)
 	
 }
 
-void SysTick_Handler(void)
+void traverseSleep(void)
 {
 	struct TCB * temp;
 	struct TCB * toRestore;
@@ -474,8 +483,6 @@ void SysTick_Handler(void)
 			temp = toRestore; //restore to be able to go to next thread
 		}			
 		temp = (*temp).nextTCB;
-	}
-	NVIC_INT_CTRL_R = 0x10000000; //trigger PendSV
-	temp = temp;
-	//do we need to ack pendsv flag?
+	}	
 }
+

@@ -146,11 +146,12 @@ void Thread3c(void){
   }
 }
 void Thread4c(void){ int i;
-  for(i=0;i<64;i++){
+  //for(i=0;i<64;i++){
+		for(;;){
     Count4++;
     OS_Sleep(10);
   }
-  OS_Kill();
+//  OS_Kill();
   Count4 = 0;
 }
 
