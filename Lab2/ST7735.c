@@ -1153,7 +1153,6 @@ uint32_t ST7735_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor){
 
 
 uint32_t ST7735_Message (int device, int line, char *string, long value){
-	OS_bWait(&canIPrint);
 	uint32_t count = 0;
 	uint16_t x = 0;
 	//uint16_t y = 0;
@@ -1165,23 +1164,23 @@ uint32_t ST7735_Message (int device, int line, char *string, long value){
 	}
 	if(device == 1){
 		line += 8;
-	}	
+	}
+	
   while(*string){
+		OS_bWait(&canIPrint);	
     ST7735_DrawCharS(x*6, line*10, *string, ST7735_RED, ST7735_BLACK, 1); // visibility parameters/colors need to test
+		OS_bSignal(&canIPrint);
     string++;
     x = x+1;
-    if(x>20)
-		{ 
-			OS_DisableInterrupts();
-			while(1){};
-			//OS_bSignal(&canIPrint);
-			//return count;  // number of characters printed
-		}
     count++;
   }
-	ST7735_SetCursor(13, line);
-	ST7735_OutUDec(value);
+	OS_bWait(&canIPrint);	
+	ST7735_CustomOutUDec(value,13,line);
 	OS_bSignal(&canIPrint);
+
+//	ST7735_SetCursor(13, line);
+//	ST7735_OutUDec(value);
+	//OS_bSignal(&canIPrint);
   return count;  // number of characters printed
 
 }	
@@ -1237,6 +1236,18 @@ void ST7735_OutUDec(uint32_t n){
   }
 }
 
+void ST7735_CustomOutUDec(uint32_t n, uint32_t x, uint32_t y ){
+	ST7735_SetCursor(x, y);
+  Messageindex = 0;
+  fillmessage(n);
+  Message[Messageindex] = 0; // terminate
+  ST7735_DrawString(StX,StY,Message,StTextColor);
+  StX = StX+Messageindex;
+  if(StX>20){
+    StX = 20;
+    ST7735_DrawCharS(StX*6,StY*10,'*',ST7735_RED,ST7735_BLACK, 1);
+  }
+}
 
 
 

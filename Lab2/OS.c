@@ -17,7 +17,7 @@
 #include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
-#define NUMBEROFTHREADS 10
+#define NUMBEROFTHREADS 50
 
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
@@ -539,7 +539,7 @@ void traverseSleep(void)
 //Fifo stuff
 // Two-index implementation of the transmit FIFO
 // can hold 0 to TXFIFOSIZE elements
-#define TXFIFOSIZE 2 // must be a power of 2
+#define TXFIFOSIZE 128 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
 typedef unsigned long txDataType;
