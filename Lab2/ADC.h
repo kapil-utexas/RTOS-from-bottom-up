@@ -1,7 +1,7 @@
 
 
 
-void ADC_Open(unsigned int channelNum);
+//void ADC_Open(unsigned int channelNum);
 
 unsigned short ADC_In(void);
 
@@ -9,4 +9,4 @@ unsigned short ADC_In(void);
 
 int ADC_Collect(unsigned int channelNum, unsigned int period, void(*task)(unsigned long data));
 
-void ADC_Init(uint8_t channelNum);
+void ADC_Init(unsigned int channelNum);

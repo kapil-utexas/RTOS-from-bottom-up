@@ -35,25 +35,27 @@ uint32_t deadCount;
 uint32_t sleepCount;
 
 struct TCB threadPool[NUMBEROFTHREADS];
+void Timer2_Init(unsigned long value);
 
 //OSasm definitions
 void OS_DisableInterrupts(void); // Disable interrupts
 void OS_EnableInterrupts(void);  // Enable interrupts
 void StartOS(void);
+
 // ******** OS_Init ************
 // initialize operating system, disable interrupts until OS_Launch
 // initialize OS controlled I/O: serial, ADC, systick, LaunchPad I/O and timers 
 // input:  none
 // output: none
-void dummy(void){}
 void OS_Init()
 {
 	uint8_t counter = 0;
 	OS_DisableInterrupts();
 	PLL_Init(Bus80MHz);
-	//ST7735_InitR(INITR_REDTAB);				   // initialize LCD
+	
 	//ADC_Init(0);
-	//UART_Init();              					 // initialize UART
+	UART_Init();              					 // initialize UART
+	
 	//construct linked list
 	for (counter = 0; counter<NUMBEROFTHREADS - 1; counter++)
 	{
@@ -65,6 +67,7 @@ void OS_Init()
 	RunPt = '\0';
 	SchedulerPt = '\0';
 	SleepPt = '\0';
+	Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
@@ -108,20 +111,26 @@ static void Timer1A_Init(unsigned long period, void(*task)(void), unsigned long 
 
 
 
+
+
+int millisecondsToCount(uint32_t period)
+{
+	return period * MILLISECONDCOUNT; 
+	
+}
 //input:
 //task: pointer to a function
 //period: 32 bit number for clock period
 //priority: will be a three bit number from 0 to 7
 //Question: uin8_t fine? priority is only 3 bits 
+//UNIT OF PERIOD WASSSSSSSSSSSSSSSSSSSSSSSSSS IN MILLISECONDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long priority){
-	OS_DisableInterrupts();
 	Timer1A_Init(period, task, priority); //converts the period from milliseconds to cycles
-	OS_EnableInterrupts();
 	return 0;
 }
 
 //will clear global timer 
-void OS_ClearPeriodicTime(){
+void OS_ClearMsTime(){
 	timerCounter = 0;
 }
 
@@ -135,9 +144,10 @@ unsigned long OS_ReadPeriodicTime(){
 void Timer1A_Handler(){
 	TIMER1_ICR_R = TIMER_ICR_TATOCINT;  // acknowledge timer1A timeout
 	OS_DisableInterrupts();
-	void (*temp)(void) = &BackgroundThread1c;
-	timerCounter++;
-	(*temp)();
+	//void (*temp)(void) = &BackgroundThread1c;
+	//timerCounter++;
+	//(*temp)();
+	(*PeriodicTask)();
 	OS_EnableInterrupts();
 }
 
@@ -158,6 +168,7 @@ void OS_InitSemaphore(Sema4Type *semaPt, long value)
 // output: none
 void OS_Wait(Sema4Type *semaPt)
 {
+	
 	OS_DisableInterrupts();
 	while((*semaPt).Value == 0)
 	{
@@ -283,6 +294,11 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	uniqueId++;
 	*/
 	//we will take the first thread from the dead pool
+	if(DeadPt == '\0')
+	{
+		OS_DisableInterrupts();
+		while(1){}
+	}
 	(DeadPt)->id = uniqueId; //unique id
 	(DeadPt)->active = 1;
 	(DeadPt)->sleepState = 0; //flag
@@ -323,10 +339,12 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 	{
 		if(schedulerCount == 0)
 		{
+			OS_DisableInterrupts();
 			while(1){};
 		}
 		if(schedulerCount == 1)
 		{
+			OS_DisableInterrupts();
 			removed = SchedulerPt; //store before we remove
 			SchedulerPt = '\0';
 			while(1){};
@@ -515,5 +533,213 @@ void traverseSleep(void)
 			break;
 		temp = (*temp).nextTCB;
 	}	
+}
+
+//Fifo stuff
+// Two-index implementation of the transmit FIFO
+// can hold 0 to TXFIFOSIZE elements
+#define TXFIFOSIZE 4 // must be a power of 2
+#define TXFIFOSUCCESS 1
+#define TXFIFOFAIL    0
+typedef char txDataType;
+unsigned long volatile OS_TxPutI;// put next
+unsigned long volatile OS_TxGetI;// get next
+txDataType static TxFifo[TXFIFOSIZE];
+
+Sema4Type mutex;        // set in background
+Sema4Type roomLeft;        // set in background
+Sema4Type dataAvailable;        // set in background
+// ******** OS_Fifo_Init ************
+// Initialize the Fifo to be empty
+// Inputs: size
+// Outputs: none 
+// In Lab 2, you can ignore the size field
+// In Lab 3, you should implement the user-defined fifo size
+// In Lab 3, you can put whatever restrictions you want on size
+//    e.g., 4 to 64 elements
+//    e.g., must be a power of 2,4,8,16,32,64,128
+void OS_Fifo_Init(unsigned long size)
+{ 
+  OS_TxPutI = OS_TxGetI = 0;  // Empty
+  OS_InitSemaphore(&mutex,1);
+	//OS_InitSemaphore(&roomLeft,TXFIFOSIZE);
+	OS_InitSemaphore(&dataAvailable,0);
+}
+
+// ******** OS_Fifo_Put ************
+// Enter one data sample into the Fifo
+// Called from the background, so no waiting 
+// Inputs:  data
+// Outputs: true if data is properly saved,
+//          false if data not saved, because it was full
+// Since this is called by interrupt handlers 
+//  this function can not disable or enable interrupts
+int OS_Fifo_Put(unsigned long data)
+{
+		
+		//OS_Wait(&roomLeft);
+		OS_bWait(&mutex);
+		if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
+		{
+			OS_bSignal(&mutex);
+			return TXFIFOFAIL;
+		}
+		TxFifo[OS_TxPutI&(TXFIFOSIZE-1)] = data; // put
+		OS_TxPutI++;  // Success, update
+		OS_bSignal(&mutex);
+		OS_Signal(&dataAvailable);
+		return(TXFIFOSUCCESS);
+}
+
+// ******** OS_Fifo_Get ************
+// Remove one data sample from the Fifo
+// Called in foreground, will spin/block if empty
+// Inputs:  none
+// Outputs: data 
+uint32_t samplesConsumed;
+unsigned long OS_Fifo_Get(void)
+{
+
+		OS_Wait(&dataAvailable);
+		OS_bWait(&mutex);
+		unsigned long toReturn;
+		toReturn = TxFifo[OS_TxGetI&(TXFIFOSIZE-1)];
+		OS_TxGetI++;  // Success, update
+		samplesConsumed++;
+		OS_bSignal(&mutex);
+		//OS_Signal(&roomLeft);
+		return toReturn;
+}
+
+// ******** OS_Fifo_Size ************
+// Check the status of the Fifo
+// Inputs: none
+// Outputs: returns the number of elements in the Fifo
+//          greater than zero if a call to OS_Fifo_Get will return right away
+//          zero or less than zero if the Fifo is empty 
+//          zero or less than zero if a call to OS_Fifo_Get will spin or block
+long OS_Fifo_Size(void)
+{
+		OS_bWait(&mutex);
+		long toReturn =  (OS_TxPutI-OS_TxGetI);
+		OS_bSignal(&mutex);
+		return toReturn;
+}
+
+//******** OS_Id *************** 
+// returns the thread ID for the currently running thread
+// Inputs: none
+// Outputs: Thread ID, number greater than zero 
+unsigned long OS_Id(void)
+{
+	return (*RunPt).id;
+}
+
+// ***************** Timer2_Init ****************
+// Activate Timer2 interrupts to run user task periodically
+// Inputs:  task is a pointer to a user function
+//          period in units (1/clockfreq)
+// Outputs: none
+void Timer2_Init(unsigned long period){
+  SYSCTL_RCGCTIMER_R |= 0x04;   // 0) activate timer2
+  TIMER2_CTL_R = 0x00000000;    // 1) disable timer2A during setup
+  TIMER2_CFG_R = 0x00000000;    // 2) configure for 32-bit mode
+  TIMER2_TAMR_R = 0x00000002;   // 3) configure for periodic mode, default down-count settings
+  TIMER2_TAILR_R = period-1;    // 4) reload value
+  TIMER2_TAPR_R = 0;            // 5) bus clock resolution
+  TIMER2_ICR_R = 0x00000001;    // 6) clear timer2A timeout flag
+  TIMER2_IMR_R = 0x00000001;    // 7) arm timeout interrupt
+  NVIC_PRI5_R = (NVIC_PRI5_R&0x00FFFFFF)|0x80000000; // 8) priority 4
+// interrupts enabled in the main program after all devices initialized
+// vector number 39, interrupt number 23
+  NVIC_EN0_R = 1<<23;           // 9) enable IRQ 23 in NVIC
+  TIMER2_CTL_R = 0x00000001;    // 10) enable timer2A
+}
+
+void Timer2A_Handler(void){
+  TIMER2_ICR_R = TIMER_ICR_TATOCINT;// acknowledge TIMER2A timeout
+  timerCounter+=1;
+}
+
+
+// ******** OS_MsTime ************
+// reads the current time in msec (from Lab 1)
+// Inputs:  none
+// Outputs: time in ms units
+// You are free to select the time resolution for this function
+// It is ok to make the resolution to match the first call to OS_AddPeriodicThread
+
+unsigned long OS_MsTime(void)
+{
+	return timerCounter * 4; //hardcoded
+}
+
+// ******** OS_Time ************
+// return the system time 
+// Inputs:  none
+// Outputs: time in 12.5ns units, 0 to 4294967295
+// The time resolution should be less than or equal to 1us, and the precision 32 bits
+// It is ok to change the resolution and precision of this function as long as 
+//   this function and OS_TimeDifference have the same resolution and precision 
+unsigned long OS_Time(void)
+{
+	return timerCounter * 20000;
+}
+
+// ******** OS_TimeDifference ************
+// Calculates difference between two times
+// Inputs:  two times measured with OS_Time
+// Outputs: time difference in 12.5ns units 
+// The time resolution should be less than or equal to 1us, and the precision at least 12 bits
+// It is ok to change the resolution and precision of this function as long as 
+//   this function and OS_Time have the same resolution and precision 
+unsigned long OS_TimeDifference(unsigned long start, unsigned long stop)
+{
+	return stop - start;
+}
+
+uint32_t dataInMailBox;
+uint8_t flagMailBox;
+Sema4Type mailBoxFree;        // set in background
+Sema4Type dataValid;        // set in background
+// ******** OS_MailBox_Init ************
+// Initialize communication channel
+// Inputs:  none
+// Outputs: none
+void OS_MailBox_Init(void)
+{
+	OS_InitSemaphore(&mailBoxFree,1);
+	OS_InitSemaphore(&dataValid,0);
+	uint32_t dataInMailBox = 0;
+	uint8_t flagMailBox = 0;
+}
+
+
+// ******** OS_MailBox_Send ************
+// enter mail into the MailBox
+// Inputs:  data to be sent
+// Outputs: none
+// This function will be called from a foreground thread
+// It will spin/block if the MailBox contains data not yet received 
+void OS_MailBox_Send(unsigned long data)
+{
+	OS_bWait(&mailBoxFree); 
+	dataInMailBox = data;
+	OS_bSignal(&dataValid);
+}
+
+// ******** OS_MailBox_Recv ************
+// remove mail from the MailBox
+// Inputs:  none
+// Outputs: data received
+// This function will be called from a foreground thread
+// It will spin/block if the MailBox is empty 
+unsigned long OS_MailBox_Recv(void)
+{
+	unsigned long toReturn;
+	OS_bWait(&dataValid);
+	toReturn = dataInMailBox;
+	OS_Signal(&mailBoxFree);
+	return toReturn;
 }
 

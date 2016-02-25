@@ -22,12 +22,13 @@
 // Analog inputs
 // PD3 Ain3 sampled at 2k, sequencer 3, by DAS software start in ISR
 // PD2 Ain5 sampled at 250Hz, sequencer 0, by Producer, timer tigger
-#include <string.h> 
-#include <stdint.h>
 #include "OS.h"
 #include "inc/tm4c123gh6pm.h"
+#include "ST7735.h"
+#include "ADC.h"
+#include "UART.h"
+#include <string.h> 
 
-#include "Lab2.h"
 //*********Prototype for FFT in cr4_fft_64_stm32.s, STMicroelectronics
 void cr4_fft_64_stm32(void *pssOUT, void *pssIN, unsigned short Nbin);
 //*********Prototype for PID in PID_stm32.s, STMicroelectronics
@@ -86,85 +87,335 @@ void PortF_Init(void){ volatile unsigned long delay;
 }
 
 
-//+++++++++++++++++++++++++DEBUGGING CODE++++++++++++++++++++++++
-// ONCE YOUR RTOS WORKS YOU CAN COMMENT OUT THE REMAINING CODE
-// 
-//*******************Initial TEST**********
-// This is the simplest configuration, test this first, (Lab 1 part 1)
-// run this with 
-// no UART interrupts
-// no SYSTICK interrupts
-// no timer interrupts
-// no switch interrupts
-// no ADC serial port or LCD output
-// no calls to semaphores
-unsigned long Count1;   // number of times thread1 loops
-unsigned long Count2;   // number of times thread2 loops
-unsigned long Count3;   // number of times thread3 loops
-unsigned long Count4;   // number of times thread4 loops
-unsigned long Count5;   // number of times thread5 loops
 
-//*******************Third TEST**********
-// Once the second test runs, test this (Lab 1 part 2)
-// no UART1 interrupts
-// SYSTICK interrupts, with or without period established by OS_Launch
-// Timer interrupts, with or without period established by OS_AddPeriodicThread
-// PortF GPIO interrupts, active low
-// no ADC serial port or LCD output
-// tests the spinlock semaphores, tests Sleep and Kill
-Sema4Type Readyc;        // set in background
-int Lost;
-void BackgroundThread1c(void){   // called at 1000 Hz
-  Count1++;
-  OS_Signal(&Readyc);
-}
-void Thread5c(void){
-  for(;;){
-    OS_Wait(&Readyc);
-    Count5++;   // Count2 + Count5 should equal Count1 
-    Lost = Count1-Count5-Count2;
-  }
-}
-void Thread2c(void){
-  OS_InitSemaphore(&Readyc,0);
-  Count1 = 0;    // number of times signal is called      
-  Count2 = 0;    
-  Count5 = 0;    // Count2 + Count5 should equal Count1  
-  NumCreated += OS_AddThread(&Thread5c,128,3); 
-  OS_AddPeriodicThread(&BackgroundThread1c,TIME_1MS,0); 
-  for(;;){
-    OS_Wait(&Readyc);
-    Count2++;   // Count2 + Count5 should equal Count1
-  }
-}
 
-void Thread3c(void){
-  Count3 = 0;          
-  for(;;){
-    Count3++;
+
+//------------------Task 1--------------------------------
+// 2 kHz sampling ADC channel 1, using software start trigger
+// background thread executed at 2 kHz
+// 60-Hz notch high-Q, IIR filter, assuming fs=2000 Hz
+// y(n) = (256x(n) -503x(n-1) + 256x(n-2) + 498y(n-1)-251y(n-2))/256 (2k sampling)
+// y(n) = (256x(n) -476x(n-1) + 256x(n-2) + 471y(n-1)-251y(n-2))/256 (1k sampling)
+long Filter(long data){
+static long x[6]; // this MACQ needs twice
+static long y[6];
+static unsigned long n=3;   // 3, 4, or 5
+  n++;
+  if(n==6) n=3;     
+  x[n] = x[n-3] = data;  // two copies of new data
+  y[n] = (256*(x[n]+x[n-2])-503*x[n-1]+498*y[n-1]-251*y[n-2]+128)/256;
+  y[n-3] = y[n];         // two copies of filter outputs too
+  return y[n];
+} 
+//******** DAS *************** 
+// background thread, calculates 60Hz notch filter
+// runs 2000 times/sec
+// samples channel 4, PD3,
+// inputs:  none
+// outputs: none
+unsigned long DASoutput;
+void DAS(void){ 
+unsigned long input;  
+unsigned static long LastTime;  // time at previous ADC sample
+unsigned long thisTime;         // time at current ADC sample
+long jitter;                    // time between measured and expected, in us
+  if(NumSamples < RUNLENGTH){   // finite time run
+    PE0 ^= 0x01;
+    input = ADC_In();           // channel set when calling ADC_Init
+    PE0 ^= 0x01;
+    thisTime = OS_Time();       // current time, 12.5 ns
+    DASoutput = Filter(input);
+    FilterWork++;        // calculation finished
+    if(FilterWork>1){    // ignore timing of first interrupt
+      unsigned long diff = OS_TimeDifference(LastTime,thisTime);
+      if(diff>PERIOD){
+        jitter = (diff-PERIOD+4)/8;  // in 0.1 usec
+      }else{
+        jitter = (PERIOD-diff+4)/8;  // in 0.1 usec
+      }
+      if(jitter > MaxJitter){
+        MaxJitter = jitter; // in usec
+      }       // jitter should be 0
+      if(jitter >= JitterSize){
+        jitter = JITTERSIZE-1;
+      }
+      JitterHistogram[jitter]++; 
+    }
+    LastTime = thisTime;
+    PE0 ^= 0x01;
   }
 }
-void Thread4c(void){ int i;
-  for(i=0;i<64;i++){
-    Count4++;
-    OS_Sleep(10);
+//--------------end of Task 1-----------------------------
+
+//------------------Task 2--------------------------------
+// background thread executes with SW1 button
+// one foreground task created with button push
+// foreground treads run for 2 sec and die
+// ***********ButtonWork*************
+void ButtonWork(void){
+unsigned long myId = OS_Id(); 
+  PE1 ^= 0x02;
+  ST7735_Message(1,0,"NumCreated =",NumCreated); 
+  PE1 ^= 0x02;
+  OS_Sleep(50);     // set this to sleep for 50msec
+  ST7735_Message(1,1,"PIDWork     =",PIDWork);
+  ST7735_Message(1,2,"DataLost    =",DataLost);
+  ST7735_Message(1,3,"Jitter 0.1us=",MaxJitter);
+  PE1 ^= 0x02;
+  OS_Kill();  // done, OS does not return from a Kill
+} 
+
+//************SW1Push*************
+// Called when SW1 Button pushed
+// Adds another foreground task
+// background threads execute once and return
+void SW1Push(void){
+  if(OS_MsTime() > 20){ // debounce
+    if(OS_AddThread(&ButtonWork,100,4)){
+      NumCreated++; 
+    }
+    OS_ClearMsTime();  // at least 20ms between touches
   }
-  OS_Kill();
-  Count4 = 0;
 }
-void BackgroundThread5c(void){   // called when Select button pushed
-  NumCreated += OS_AddThread(&Thread4c,128,3); 
+//************SW2Push*************
+// Called when SW2 Button pushed, Lab 3 only
+// Adds another foreground task
+// background threads execute once and return
+void SW2Push(void){
+  if(OS_MsTime() > 20){ // debounce
+    if(OS_AddThread(&ButtonWork,100,4)){
+      NumCreated++; 
+    }
+    OS_ClearMsTime();  // at least 20ms between touches
+  }
 }
+//--------------end of Task 2-----------------------------
+
+//------------------Task 3--------------------------------
+// hardware timer-triggered ADC sampling at 400Hz
+// Producer runs as part of ADC ISR
+// Producer uses fifo to transmit 400 samples/sec to Consumer
+// every 64 samples, Consumer calculates FFT
+// every 2.5ms*64 = 160 ms (6.25 Hz), consumer sends data to Display via mailbox
+// Display thread updates LCD with measurement
+
+//******** Producer *************** 
+// The Producer in this lab will be called from your ADC ISR
+// A timer runs at 400Hz, started by your ADC_Collect
+// The timer triggers the ADC, creating the 400Hz sampling
+// Your ADC ISR runs when ADC data is ready
+// Your ADC ISR calls this function with a 12-bit sample 
+// sends data to the consumer, runs periodically at 400Hz
+// inputs:  none
+// outputs: none
+void Producer(unsigned long data){  
+  if(NumSamples < RUNLENGTH){   // finite time run
+    NumSamples++;               // number of samples
+    if(OS_Fifo_Put(data) == 0){ // send to consumer
+      DataLost++;
+    } 
+  } 
+}
+void Display(void); 
+
+//******** Consumer *************** 
+// foreground thread, accepts data from producer
+// calculates FFT, sends DC component to Display
+// inputs:  none
+// outputs: none
+void Consumer(void){ 
+unsigned long data,DCcomponent;   // 12-bit raw ADC sample, 0 to 4095
+unsigned long t;                  // time in 2.5 ms
+unsigned long myId = OS_Id(); 
+  //ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz
+	OS_DisableInterrupts();
+	ADC_Init(5);
+	OS_EnableInterrupts();
+  NumCreated += OS_AddThread(&Display,128,0); 
+  while(NumSamples < RUNLENGTH) { 
+    PE2 = 0x04;
+    for(t = 0; t < 64; t++){   // collect 64 ADC samples
+      data = OS_Fifo_Get();    // get from producer
+      x[t] = data;             // real part is 0 to 4095, imaginary part is 0
+    }
+    PE2 = 0x00;
+    cr4_fft_64_stm32(y,x,64);  // complex FFT of last 64 ADC values
+    DCcomponent = y[0]&0xFFFF; // Real part at frequency 0, imaginary part should be zero
+    OS_MailBox_Send(DCcomponent); // called every 2.5ms*64 = 160ms
+  }
+  OS_Kill();  // done
+}
+//******** Display *************** 
+// foreground thread, accepts data from consumer
+// displays calculated results on the LCD
+// inputs:  none                            
+// outputs: none
+void Display(void){ 
+unsigned long data,voltage;
+	//OS_DisableInterrupts();
+  ST7735_Message(0,1,"Run length = ",(RUNLENGTH)/FS);   // top half used for Display
+	//OS_EnableInterrupts();
+  while(NumSamples < RUNLENGTH) { 
+    data = OS_MailBox_Recv();
+    voltage = 3000*data/4095;               // calibrate your device so voltage is in mV
+    PE3 = 0x08;
+    ST7735_Message(0,2,"v(mV) =",voltage);  
+    PE3 = 0x00;
+  } 
+  OS_Kill();  // done
+} 
+
+//--------------end of Task 3-----------------------------
+
+//------------------Task 4--------------------------------
+// foreground thread that runs without waiting or sleeping
+// it executes a digital controller 
+//******** PID *************** 
+// foreground thread, runs a PID controller
+// never blocks, never sleeps, never dies
+// inputs:  none
+// outputs: none
+short IntTerm;     // accumulated error, RPM-sec
+short PrevError;   // previous error, RPM
+short Coeff[3];    // PID coefficients
+short Actuator;
+
+void PID(void){ 
+short err;  // speed error, range -100 to 100 RPM
+unsigned long myId = OS_Id(); 
+  PIDWork = 0;
+  IntTerm = 0;
+  PrevError = 0;
+  Coeff[0] = 384;   // 1.5 = 384/256 proportional coefficient
+  Coeff[1] = 128;   // 0.5 = 128/256 integral coefficient
+  Coeff[2] = 64;    // 0.25 = 64/256 derivative coefficient*
+  while(NumSamples < RUNLENGTH) { 
+    for(err = -1000; err <= 1000; err++){    // made-up data
+      Actuator = PID_stm32(err,Coeff)/256;
+    }
+    PIDWork++;        // calculation finished
+  }
+  for(;;){ }          // done
+}
+//--------------end of Task 4-----------------------------
+
+//------------------Task 5--------------------------------
+// UART background ISR performs serial input/output
+// Two software fifos are used to pass I/O data to foreground
+// The interpreter runs as a foreground thread
+// The UART driver should call OS_Wait(&RxDataAvailable) when foreground tries to receive
+// The UART ISR should call OS_Signal(&RxDataAvailable) when it receives data from Rx
+// Similarly, the transmit channel waits on a semaphore in the foreground
+// and the UART ISR signals this semaphore (TxRoomLeft) when getting data from fifo
+// Modify your intepreter from Lab 1, adding commands to help debug 
+// Interpreter is a foreground thread, accepts input from serial port, outputs to serial port
+// inputs:  none
+// outputs: none
+#define MESSAGELENGTH 20
+void OutCRLF(void){
+  UART_OutChar(CR);
+  UART_OutChar(LF);
+}
+void LCD_test(uint8_t device, char * message)
+{
+	ST7735_Message (device, 0, message, strlen(message));
+}
+void dummy(void){}; //dummy function for user task
+void Interpreter(void)    // just a prototype, link to your interpreter
+{
+	uint32_t stringSize;
+	uint32_t adcVoltage;
+	uint8_t deviceChosen;
+	uint8_t taskAddedBefore = 0;
+	char message[MESSAGELENGTH] = "";
+	OutCRLF();
+	UART_OutString("Input Command: ");
+	while(1){
+		OutCRLF();
+		//UART_OutString("Commands: 0 - ADC, 1 - LCD, 2 - Time");
+		OutCRLF();
+		switch(UART_InUDec())
+		{
+			case 0:
+				OutCRLF();
+				UART_OutString("ADC Voltage = ");
+				//ADC_Open(4);
+				adcVoltage = (ADC_In() *3300) / 4095; //convert to mV
+				UART_OutUDec(adcVoltage);
+				break;
+			case 1:
+				OutCRLF();
+				UART_OutString("Enter LCD device 0 or 1: ");
+				deviceChosen = UART_InUDec();
+				OutCRLF();
+				UART_OutString("Enter message: ");
+				UART_InString(message, MESSAGELENGTH);
+				OutCRLF();
+				stringSize = strlen(message);
+				if(stringSize > 20)
+				{
+					OutCRLF();
+					UART_OutString("String too long, only 20 chars will be printed...");
+					OutCRLF();
+				}
+				LCD_test(deviceChosen, message); //prints to lcd
+				break;
+			case 2:
+				if(!taskAddedBefore){
+					OS_AddPeriodicThread(dummy, 5, 1);
+					taskAddedBefore = 1;
+				}
+				OutCRLF();
+				UART_OutUDec(OS_ReadPeriodicTime());
+				break;
+			default:
+				UART_OutString("Incorrect command!");
+				break;
+		}
+
+		//adcSample = ADC_In();
+		//ST7735_SetCursor(0,0);
+		//ST7735_OutUDec(adcSample);
+	
+	}
+}
+// add the following commands, leave other commands, if they make sense
+// 1) print performance measures 
+//    time-jitter, number of data points lost, number of calculations performed
+//    i.e., NumSamples, NumCreated, MaxJitter, DataLost, FilterWork, PIDwork
       
-int main(void){   // Testmain3
-  Count4 = 0;          
+// 2) print debugging parameters 
+//    i.e., x[], y[] 
+//--------------end of Task 5-----------------------------
+
+
+//*******************final user main DEMONTRATE THIS TO TA**********
+int main(void){ 
   OS_Init();           // initialize, disable interrupts
-// Count2 + Count5 should equal Count1
+  PortE_Init();
+	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
+  DataLost = 0;        // lost data between producer and consumer
+  NumSamples = 0;
+  MaxJitter = 0;       // in 1us units
+
+//********initialize communication channels
+  OS_MailBox_Init();
+  OS_Fifo_Init(128);    // ***note*** 4 is not big enough*****
+
+//*******attach background tasks***********
+  OS_AddSW1Task(&SW1Push,2);
+  //OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
+    // sequencer 3, channel 4, PD3, sampling in DAS()
+  OS_AddPeriodicThread(&DAS,PERIOD,1); // 2 kHz real time sampling of PD3
+
   NumCreated = 0 ;
-  OS_AddSW1Task(&BackgroundThread5c,2);
-  NumCreated += OS_AddThread(&Thread2c,128,2); 
-  NumCreated += OS_AddThread(&Thread3c,128,3); 
-  NumCreated += OS_AddThread(&Thread4c,128,3); 
+// create initial foreground threads
+  NumCreated += OS_AddThread(&Interpreter,128,2); 
+  NumCreated += OS_AddThread(&Consumer,128,1); 
+  NumCreated += OS_AddThread(&PID,128,3);  // Lab 3, make this lowest priority
+ 
   OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
   return 0;            // this never executes
 }
+
+

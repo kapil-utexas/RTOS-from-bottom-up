@@ -35,6 +35,16 @@ struct  Sema4{
 };
 typedef struct Sema4 Sema4Type;
 
+//ADDED BY RAMON AND KAPIL
+
+//Will return the current 32-bit global counter. 
+//The units of this system time are the period of
+//interrupt passed since initializing with OS_AddPeriodicThread or last reset.
+unsigned long OS_ReadPeriodicTime(void);
+
+
+//END OF ADDED BY RAMON AND KAPIL
+
 // ******** OS_Init ************
 // initialize operating system, disable interrupts until OS_Launch
 // initialize OS controlled I/O: serial, ADC, systick, LaunchPad I/O and timers 

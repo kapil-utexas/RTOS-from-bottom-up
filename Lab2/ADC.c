@@ -23,6 +23,7 @@
  */
 #include <stdint.h>
 #include "ADC.h"
+#include "Lab2.h"
 #include "../inc/tm4c123gh6pm.h"
 
 #define NVIC_EN0_INT17          0x00020000  // Interrupt 17 enable
@@ -65,10 +66,7 @@
 #define SYSCTL_RCGCGPIO_R1      0x00000002  // GPIO Port B Run Mode Clock
                                             // Gating Control
 
-void DisableInterrupts(void); // Disable interrupts
-void EnableInterrupts(void);  // Enable interrupts
-long StartCritical (void);    // previous I bit, disable interrupts
-void EndCritical(long sr);    // restore I bit to previous value
+
 void WaitForInterrupt(void);  // low power mode
 
 
@@ -216,17 +214,20 @@ void ADC_Open(unsigned int channelNum)
 
 }	
 
-void ADC_Init(uint8_t channelNum){
+
+
+//Initialize the ADC and timer
+void ADC_Init(unsigned int channelNum){
 	volatile uint32_t delay;
   SYSCTL_RCGCADC_R |= 0x01;     // activate ADC0 
   SYSCTL_RCGCTIMER_R |= 0x01;   // activate timer0 
   delay = SYSCTL_RCGCTIMER_R;   // allow time to finish activating
   TIMER0_CTL_R = 0x00000000;    // disable timer0A during setup
   TIMER0_CTL_R |= 0x00000020;   // enable timer0A trigger to ADC
-  TIMER0_CFG_R = 4;             // configure for 16-bit timer mode-- changed from 32 to 16 bit (for 32 bit use 0)
+  TIMER0_CFG_R = 0;             // configure for 16-bit timer mode-- changed from 32 to 16 bit use 4(for 32 bit use 0)
   TIMER0_TAMR_R = 0x00000002;   // configure for periodic mode, default down-count settings
   TIMER0_TAPR_R = 0;            // prescale value for trigger
-  TIMER0_TAILR_R = 80000000;    // start value for trigger
+  TIMER0_TAILR_R = 200000-1;    // start value for trigger
   TIMER0_IMR_R = 0x00000000;    // disable all interrupts
   TIMER0_CTL_R |= 0x00000001;   // enable timer0A 32-b, periodic, no interrupts
   ADC0_PC_R = 0x01;         // configure for 125K samples/sec
@@ -236,24 +237,26 @@ void ADC_Init(uint8_t channelNum){
   ADC0_SSMUX3_R = currentChannel;
   ADC0_SSCTL3_R = 0x06;          // set flag and end                       
   ADC0_IM_R |= 0x08;             // enable SS3 interrupts
+	ADC_Open(channelNum);
   ADC0_ACTSS_R |= 0x08;          // enable sample sequencer 3
   NVIC_PRI4_R = (NVIC_PRI4_R&0xFFFF00FF)|0x00004000; //priority 2
   NVIC_EN0_R = 1<<17;              // enable interrupt 17 in NVIC
-
 }
+
 volatile unsigned int done;
 volatile uint32_t ADCvalue;
+
 unsigned short ADC_In(void){
-		done = 0; 
-		while(done == 0){}; //wait until a sample has finished
 		return ADCvalue; //return most recent sample
 }
-
+uint32_t counterSeqCalled;
 void ADC0Seq3_Handler(void){
   ADC0_ISC_R = 0x08;          // acknowledge ADC sequence 3 completion
+	counterSeqCalled++;
   ADCvalue = ADC0_SSFIFO3_R;  // 12-bit result
-	producerFunction(ADCvalue);
-	done = 1; //sample done
+	producerFunction = Producer;
+	(*producerFunction)(ADCvalue);
+	//done = 1; //sample done
 }
 
 int ADC_Collect(unsigned int channelNum, unsigned int period, void(*task)(unsigned long data)){
@@ -265,3 +268,6 @@ int ADC_Collect(unsigned int channelNum, unsigned int period, void(*task)(unsign
 	producerFunction = task;
 	return 0;
 }	
+
+
+

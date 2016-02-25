@@ -92,7 +92,7 @@
 #include <stdint.h>
 #include "ST7735.h"
 #include "../inc/tm4c123gh6pm.h"
-
+#include "OS.h"
 // 16 rows (0 to 15) and 21 characters (0 to 20)
 // Requires (11 + size*size*6*8) bytes of transmission for each character
 uint32_t StX=0; // position along the horizonal axis 0 to 20
@@ -767,6 +767,7 @@ void ST7735_InitB(void) {
   ST7735_FillScreen(0);                 // set screen to black
 }
 
+Sema4Type canIPrint;
 
 //------------ST7735_InitR------------
 // Initialization for ST7735R screens (green or red tabs).
@@ -774,6 +775,8 @@ void ST7735_InitB(void) {
 // Output: none
 void ST7735_InitR(enum initRFlags option) {
   commonInit(Rcmd1);
+	OS_InitSemaphore(&canIPrint,1);
+
   if(option == INITR_GREENTAB) {
     commandList(Rcmd2green);
     ColStart = 2;
@@ -1148,7 +1151,9 @@ uint32_t ST7735_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor){
   return count;  // number of characters printed
 }
 
+
 uint32_t ST7735_Message (int device, int line, char *string, long value){
+	OS_bWait(&canIPrint);
 	uint32_t count = 0;
 	uint16_t x = 0;
 	//uint16_t y = 0;
@@ -1161,9 +1166,16 @@ uint32_t ST7735_Message (int device, int line, char *string, long value){
     ST7735_DrawCharS(x*6, line*10, *string, ST7735_RED, ST7735_BLACK, 1); // visibility parameters/colors need to test
     string++;
     x = x+1;
-    if(x>20) return count;  // number of characters printed
+    if(x>20)
+		{ 
+			OS_bSignal(&canIPrint);
+			return count;  // number of characters printed
+		}
     count++;
   }
+	ST7735_SetCursor(13, line);
+	ST7735_OutUDec(value);
+	OS_bSignal(&canIPrint);
   return count;  // number of characters printed
 
 }	

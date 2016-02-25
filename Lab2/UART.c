@@ -32,7 +32,7 @@
 
 #include "FIFO.h"
 #include "UART.h"
-
+#include "OS.h"
 #define NVIC_EN0_INT5           0x00000020  // Interrupt 5 enable
 
 #define UART_FR_RXFF            0x00000040  // UART Receive FIFO Full
@@ -71,9 +71,12 @@ void WaitForInterrupt(void);  // low power mode
 AddIndexFifo(Rx, FIFOSIZE, char, FIFOSUCCESS, FIFOFAIL)
 AddIndexFifo(Tx, FIFOSIZE, char, FIFOSUCCESS, FIFOFAIL)
 
+Sema4Type RxDataAvailable;
+Sema4Type TxDataAvailable;
 // Initialize UART0
 // Baud rate is 115200 bits/sec
 void UART_Init(void){
+	OS_InitSemaphore(&RxDataAvailable,0);
   SYSCTL_RCGCUART_R |= 0x01;            // activate UART0
   SYSCTL_RCGCGPIO_R |= 0x01;            // activate port A
   RxFifo_Init();                        // initialize empty FIFOs
@@ -106,6 +109,7 @@ void static copyHardwareToSoftware(void){
   while(((UART0_FR_R&UART_FR_RXFE) == 0) && (RxFifo_Size() < (FIFOSIZE - 1))){
     letter = UART0_DR_R;
     RxFifo_Put(letter);
+		OS_Signal(&RxDataAvailable);
   }
 }
 // copy from software TX FIFO to hardware TX FIFO
@@ -113,25 +117,35 @@ void static copyHardwareToSoftware(void){
 void static copySoftwareToHardware(void){
   char letter;
   while(((UART0_FR_R&UART_FR_TXFF) == 0) && (TxFifo_Size() > 0)){
+		OS_Wait(&TxDataAvailable);
     TxFifo_Get(&letter);
     UART0_DR_R = letter;
   }
 }
+
+
+
 // input ASCII character from UART
 // spin if RxFifo is empty
 char UART_InChar(void){
   char letter;
-  while(RxFifo_Get(&letter) == FIFOFAIL){};
+	OS_Wait(&RxDataAvailable);
+	letter = RxFifo_Get(&letter);
+  //while( RxFifo_Get(&letter) == FIFOFAIL){};
   return(letter);
 }
 // output ASCII character to UART
 // spin if TxFifo is full
 void UART_OutChar(char data){
-  while(TxFifo_Put(data) == FIFOFAIL){};
+  //while(TxFifo_Put(data) == FIFOFAIL){};
+	TxFifo_Put(data);
+	OS_Signal(&TxDataAvailable);
   UART0_IM_R &= ~UART_IM_TXIM;          // disable TX FIFO interrupt
   copySoftwareToHardware();
   UART0_IM_R |= UART_IM_TXIM;           // enable TX FIFO interrupt
 }
+
+
 // at least one of three things has happened:
 // hardware TX FIFO goes from 3 to 2 or less items
 // hardware RX FIFO goes from 1 to 2 or more items
