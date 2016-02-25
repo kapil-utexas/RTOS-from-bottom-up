@@ -54,7 +54,7 @@ void OS_Init()
 	PLL_Init(Bus80MHz);
 	
 	//ADC_Init(0);
-	UART_Init();              					 // initialize UART
+	//UART_Init();              					 // initialize UART
 	
 	//construct linked list
 	for (counter = 0; counter<NUMBEROFTHREADS - 1; counter++)
@@ -67,7 +67,7 @@ void OS_Init()
 	RunPt = '\0';
 	SchedulerPt = '\0';
 	SleepPt = '\0';
-	Timer2_Init(20000); //1 ms period for taking time!!!!!!
+	//Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7

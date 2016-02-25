@@ -327,6 +327,7 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 	uint32_t adcVoltage;
 	uint8_t deviceChosen;
 	uint8_t taskAddedBefore = 0;
+	uint8_t commandChosen = -1;
 	char message[MESSAGELENGTH] = "";
 	OutCRLF();
 	UART_OutString("Input Command: ");
@@ -334,16 +335,18 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 		OutCRLF();
 		//UART_OutString("Commands: 0 - ADC, 1 - LCD, 2 - Time");
 		OutCRLF();
-		switch(UART_InUDec())
+		commandChosen = UART_InChar();
+		switch(commandChosen)
 		{
-			case 0:
+			case '0':
 				OutCRLF();
 				UART_OutString("ADC Voltage = ");
 				//ADC_Open(4);
 				adcVoltage = (ADC_In() *3300) / 4095; //convert to mV
 				UART_OutUDec(adcVoltage);
+				OutCRLF();
 				break;
-			case 1:
+			case '1':
 				OutCRLF();
 				UART_OutString("Enter LCD device 0 or 1: ");
 				deviceChosen = UART_InUDec();
@@ -355,18 +358,52 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 				if(stringSize > 20)
 				{
 					OutCRLF();
-					UART_OutString("String too long, only 20 chars will be printed...");
+					UART_OutString("String too long...");
 					OutCRLF();
 				}
 				LCD_test(deviceChosen, message); //prints to lcd
+				OutCRLF();
 				break;
-			case 2:
+			case '2':
 				if(!taskAddedBefore){
 					OS_AddPeriodicThread(dummy, 5, 1);
 					taskAddedBefore = 1;
 				}
 				OutCRLF();
 				UART_OutUDec(OS_ReadPeriodicTime());
+				OutCRLF();
+				break;
+			case '3':
+				UART_OutString("NumSamples: ");
+				UART_OutUDec(NumSamples);
+				OutCRLF();
+				break;
+			case '4':
+				UART_OutString("Jitter: ");
+				UART_OutUDec(MaxJitter);
+				OutCRLF();
+				break;
+			case '5':
+				UART_OutString("DataLost: ");
+				UART_OutUDec(DataLost);
+				OutCRLF();
+				break;
+			case '6':
+				UART_OutString("FilterWork: ");
+				UART_OutUDec(FilterWork);
+				OutCRLF();
+				break;
+			case '7':
+				UART_OutString("NumCreated: ");
+				UART_OutUDec(NumCreated);
+				OutCRLF();
+				break;
+			case '8':
+				for(int i = 0; i<64; i++)
+				{
+					UART_OutUDec(x[i]);
+					OutCRLF();
+				}
 				break;
 			default:
 				UART_OutString("Incorrect command!");
@@ -385,7 +422,7 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 //    i.e., NumSamples, NumCreated, MaxJitter, DataLost, FilterWork, PIDwork
       
 // 2) print debugging parameters 
-//    i.e., x[], y[] 
+//    i.e., x, y[] 
 //--------------end of Task 5-----------------------------
 
 
@@ -401,7 +438,7 @@ int main(void){
   OS_MailBox_Init();
   OS_Fifo_Init(2);    // ***note*** 4 is not big enough*****
 	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
-
+	UART_Init();              					 // initialize UART
 //*******attach background tasks***********
   OS_AddSW1Task(&SW1Push,2);
 //  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3

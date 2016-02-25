@@ -644,8 +644,8 @@ xb4be,0x0c7c
   304 000002CE                 END
 Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\cr4_ff
 t_64_stm32.d -o.\cr4_fft_64_stm32.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\
-Include -IC:\Keil\ARM\Inc\Luminary --list=.\cr4_fft_64_stm32.lst cr4_fft_64_stm
-32.s
+Include -IC:\Keil\ARM\Inc\Luminary --predefine="__EVAL SETA 1" --list=.\cr4_fft
+_64_stm32.lst cr4_fft_64_stm32.s
 
 
 
@@ -746,4 +746,4 @@ Symbol: TableFFT
       None
 Comment: TableFFT unused
 1 symbol
-358 symbols in table
+359 symbols in table
