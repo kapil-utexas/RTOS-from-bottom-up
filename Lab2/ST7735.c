@@ -1158,7 +1158,11 @@ uint32_t ST7735_Message (int device, int line, char *string, long value){
 	uint16_t x = 0;
 	//uint16_t y = 0;
 	
-  if(line>7) return 0;
+  if(line>7) 
+	{
+			OS_DisableInterrupts();
+			while(1){};;
+	}
 	if(device == 1){
 		line += 8;
 	}	
@@ -1168,8 +1172,10 @@ uint32_t ST7735_Message (int device, int line, char *string, long value){
     x = x+1;
     if(x>20)
 		{ 
-			OS_bSignal(&canIPrint);
-			return count;  // number of characters printed
+			OS_DisableInterrupts();
+			while(1){};
+			//OS_bSignal(&canIPrint);
+			//return count;  // number of characters printed
 		}
     count++;
   }

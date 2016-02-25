@@ -208,9 +208,9 @@ void ADC_Open(unsigned int channelNum)
       GPIO_PORTB_AMSEL_R |= 0x20; // 6.11) enable analog functionality on PB5
       break;
   }
-	ADC0_ACTSS_R &= ~0x08;    // disable sample sequencer 3
+	//ADC0_ACTSS_R &= ~0x08;    // disable sample sequencer 3
   ADC0_SSMUX3_R = currentChannel;
-  ADC0_ACTSS_R |= 0x08;          // enable sample sequencer 3
+  //ADC0_ACTSS_R |= 0x08;          // enable sample sequencer 3
 
 }	
 

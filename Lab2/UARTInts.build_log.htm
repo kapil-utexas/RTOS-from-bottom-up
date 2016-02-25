@@ -3,30 +3,46 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-C:\Users\Kapil\Desktop\RTOSlab\RTOS-from-bottom-up\Lab2\UARTInts.uvproj
-Project File Date:  02/21/2016
+C:\445M\Lab2\UARTInts.uvproj
+Project File Date:  02/25/2016
 
 <h2>Output:</h2>
 Rebuild target 'UARTInts'
 compiling PLL.c...
 compiling OS.c...
-OS.c(402): warning:  #940-D: missing return statement at end of non-void function "OS_AddSW1Task"
-  }
-OS.c: 1 warning, 0 errors
+OS.c(714): warning:  #177-D: variable "dataInMailBox" was declared but never referenced
+        uint32_t dataInMailBox = 0;
+OS.c(715): warning:  #177-D: variable "flagMailBox" was declared but never referenced
+        uint8_t flagMailBox = 0;
+OS.c: 2 warnings, 0 errors
 compiling Lab2.c...
 assembling startup.s...
 assembling OSasm.s...
 compiling ADC.c...
 compiling ST7735.c...
+ST7735.c(1163): warning:  #223-D: function "OS_DisableInterrupts" declared implicitly
+                        OS_DisableInterrupts();
+ST7735.c(1175): warning:  #223-D: function "OS_DisableInterrupts" declared implicitly
+                        OS_DisableInterrupts();
+ST7735.c: 2 warnings, 0 errors
 compiling Switch.c...
+compiling UART.c...
+assembling cr4_fft_64_stm32.s...
+assembling PID_stm32.s...
 linking...
-Program Size: Code=3004 RO-data=32 RW-data=132 ZI-data=2732  
-".\UARTInts.axf" - 0 Error(s), 1 Warning(s).
+Program Size: Code=10524 RO-data=2052 RW-data=256 ZI-data=7856  
+".\UARTInts.axf" - 0 Error(s), 4 Warning(s).
 </pre>
 </body>
 </html>
-" - 2 Error(s), 0 Warning(s).
-Target not created
-ror messages.
-".\UARTInts.axf" - 3 Error(s), 0 Warning(s).
-Target not created
+Ints.axf" 
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
+Verify OK.
+Error: Target DLL has been cancelled. Debugger aborted !
+
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
+Verify OK.

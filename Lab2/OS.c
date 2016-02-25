@@ -20,7 +20,7 @@
 #define NUMBEROFTHREADS 10
 
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
-static uint32_t timerCounter = 0;
+ uint32_t timerCounter = 0;
 int32_t StartCritical(void);
 void EndCritical(int32_t primask);
 
@@ -81,6 +81,7 @@ void OS_Init()
 // In Lab 3, you should implement the user-defined TimeSlice field
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
+	Timer2_Init(80);
 	RunPt = SchedulerPt; //make the first thread active
 	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
 	NVIC_ST_CTRL_R = 0x07; //enable systick
@@ -538,13 +539,13 @@ void traverseSleep(void)
 //Fifo stuff
 // Two-index implementation of the transmit FIFO
 // can hold 0 to TXFIFOSIZE elements
-#define TXFIFOSIZE 4 // must be a power of 2
+#define TXFIFOSIZE 128 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
-typedef char txDataType;
+typedef unsigned long txDataType;
 unsigned long volatile OS_TxPutI;// put next
 unsigned long volatile OS_TxGetI;// get next
-txDataType static TxFifo[TXFIFOSIZE];
+txDataType TxFifo[TXFIFOSIZE];
 
 Sema4Type mutex;        // set in background
 Sema4Type roomLeft;        // set in background
@@ -562,7 +563,7 @@ void OS_Fifo_Init(unsigned long size)
 { 
   OS_TxPutI = OS_TxGetI = 0;  // Empty
   OS_InitSemaphore(&mutex,1);
-	//OS_InitSemaphore(&roomLeft,TXFIFOSIZE);
+	OS_InitSemaphore(&roomLeft,TXFIFOSIZE);
 	OS_InitSemaphore(&dataAvailable,0);
 }
 
@@ -577,13 +578,13 @@ void OS_Fifo_Init(unsigned long size)
 int OS_Fifo_Put(unsigned long data)
 {
 		
-		//OS_Wait(&roomLeft);
+		OS_Wait(&roomLeft);
 		OS_bWait(&mutex);
-		if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
-		{
-			OS_bSignal(&mutex);
-			return TXFIFOFAIL;
-		}
+		//if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
+		//{
+			//OS_bSignal(&mutex);
+			//return TXFIFOFAIL;
+		//}
 		TxFifo[OS_TxPutI&(TXFIFOSIZE-1)] = data; // put
 		OS_TxPutI++;  // Success, update
 		OS_bSignal(&mutex);
@@ -607,7 +608,7 @@ unsigned long OS_Fifo_Get(void)
 		OS_TxGetI++;  // Success, update
 		samplesConsumed++;
 		OS_bSignal(&mutex);
-		//OS_Signal(&roomLeft);
+		OS_Signal(&roomLeft);
 		return toReturn;
 }
 
@@ -671,7 +672,7 @@ void Timer2A_Handler(void){
 
 unsigned long OS_MsTime(void)
 {
-	return timerCounter * 4; //hardcoded
+	return timerCounter /1000; //hardcoded
 }
 
 // ******** OS_Time ************
@@ -683,7 +684,7 @@ unsigned long OS_MsTime(void)
 //   this function and OS_TimeDifference have the same resolution and precision 
 unsigned long OS_Time(void)
 {
-	return timerCounter * 20000;
+	return (timerCounter) * (80);
 }
 
 // ******** OS_TimeDifference ************
@@ -739,7 +740,7 @@ unsigned long OS_MailBox_Recv(void)
 	unsigned long toReturn;
 	OS_bWait(&dataValid);
 	toReturn = dataInMailBox;
-	OS_Signal(&mailBoxFree);
+	OS_bSignal(&mailBoxFree);
 	return toReturn;
 }
 
