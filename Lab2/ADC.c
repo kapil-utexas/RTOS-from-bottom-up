@@ -260,11 +260,11 @@ void ADC0Seq3_Handler(void){
 }
 
 int ADC_Collect(unsigned int channelNum, unsigned int period, void(*task)(unsigned long data)){
-	ADC_Open(channelNum);
-	TIMER0_CTL_R = 0x00000000;    // disable timer0A during setup
+	ADC_Open(5);
+	TIMER0_CTL_R &= ~0x00000001;    // disable timer0A during setup
 	period = 1000 * (80000/period);
 	TIMER0_TAILR_R = period-1;    // start value for trigger
-	TIMER0_CTL_R |= 0x00000001;   // enable timer0A 16-b, periodic, no interrupts
+  TIMER0_CTL_R |= 0x00000001;   // enable timer0A trigger to ADC
 	producerFunction = task;
 	return 0;
 }	

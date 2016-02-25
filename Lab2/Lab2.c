@@ -229,8 +229,8 @@ unsigned long t;                  // time in 2.5 ms
 unsigned long myId = OS_Id(); 
   //ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz
 	//OS_DisableInterrupts();
-	//ADC_Open(5);
-	//OS_EnableInterrupts();
+	ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz	//OS_EnableInterrupts();
+	
   NumCreated += OS_AddThread(&Display,128,0); 
   while(NumSamples < RUNLENGTH) { 
     PE2 = 0x04;
@@ -399,13 +399,13 @@ int main(void){
 
 //********initialize communication channels
   OS_MailBox_Init();
-  OS_Fifo_Init(128);    // ***note*** 4 is not big enough*****
+  OS_Fifo_Init(2);    // ***note*** 4 is not big enough*****
 	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 
 //*******attach background tasks***********
   OS_AddSW1Task(&SW1Push,2);
 //  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
-  ADC_Init(5);  // sequencer 3, channel 4, PD3, sampling in DAS()
+  ADC_Init(4);  // sequencer 3, channel 4, PD3, sampling in DAS()
   OS_AddPeriodicThread(&DAS,PERIOD,1); // 2 kHz real time sampling of PD3
 
   NumCreated = 0 ;

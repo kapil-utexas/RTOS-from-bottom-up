@@ -539,7 +539,7 @@ void traverseSleep(void)
 //Fifo stuff
 // Two-index implementation of the transmit FIFO
 // can hold 0 to TXFIFOSIZE elements
-#define TXFIFOSIZE 128 // must be a power of 2
+#define TXFIFOSIZE 2 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
 typedef unsigned long txDataType;
@@ -563,7 +563,7 @@ void OS_Fifo_Init(unsigned long size)
 { 
   OS_TxPutI = OS_TxGetI = 0;  // Empty
   OS_InitSemaphore(&mutex,1);
-	OS_InitSemaphore(&roomLeft,TXFIFOSIZE);
+	//OS_InitSemaphore(&roomLeft,TXFIFOSIZE);
 	OS_InitSemaphore(&dataAvailable,0);
 }
 
@@ -578,13 +578,13 @@ void OS_Fifo_Init(unsigned long size)
 int OS_Fifo_Put(unsigned long data)
 {
 		
-		OS_Wait(&roomLeft);
+		//OS_Wait(&roomLeft);
 		OS_bWait(&mutex);
-		//if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
-		//{
-			//OS_bSignal(&mutex);
-			//return TXFIFOFAIL;
-		//}
+		if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
+		{
+			OS_bSignal(&mutex);
+			return TXFIFOFAIL;
+		}
 		TxFifo[OS_TxPutI&(TXFIFOSIZE-1)] = data; // put
 		OS_TxPutI++;  // Success, update
 		OS_bSignal(&mutex);
@@ -608,7 +608,7 @@ unsigned long OS_Fifo_Get(void)
 		OS_TxGetI++;  // Success, update
 		samplesConsumed++;
 		OS_bSignal(&mutex);
-		OS_Signal(&roomLeft);
+		//OS_Signal(&roomLeft);
 		return toReturn;
 }
 
