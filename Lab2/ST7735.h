@@ -270,6 +270,9 @@ uint32_t ST7735_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor);
 //into two displays having 8 rows each
 uint32_t ST7735_Message (int device, int line, char *string, long value);
 
+//custom
+void ST7735_CustomOutUDec(uint32_t n, uint32_t x, uint32_t y );
+
 //********ST7735_SetCursor*****************
 // Move the cursor to the desired X- and Y-position.  The
 // next character will be printed here.  X=0 is the leftmost

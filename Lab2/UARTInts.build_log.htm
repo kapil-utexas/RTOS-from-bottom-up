@@ -3,7 +3,7 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-C:\445M\Lab2\UARTInts.uvproj
+C:\EE445M\Lab2\UARTInts.uvproj
 Project File Date:  02/25/2016
 
 <h2>Output:</h2>
@@ -16,6 +16,9 @@ OS.c(715): warning:  #177-D: variable "flagMailBox" was declared but never refer
         uint8_t flagMailBox = 0;
 OS.c: 2 warnings, 0 errors
 compiling Lab2.c...
+Lab2.c(330): warning:  #68-D: integer conversion resulted in a change of sign
+        uint8_t commandChosen = -1;
+Lab2.c: 1 warning, 0 errors
 assembling startup.s...
 assembling OSasm.s...
 compiling ADC.c...
@@ -27,27 +30,26 @@ ST7735.c(1175): warning:  #223-D: function "OS_DisableInterrupts" declared impli
 ST7735.c: 2 warnings, 0 errors
 compiling Switch.c...
 compiling UART.c...
+UART.c(142): warning:  #550-D: variable "errorCode" was set but never used
+        char errorCode;
+UART.c: 1 warning, 0 errors
 assembling cr4_fft_64_stm32.s...
 assembling PID_stm32.s...
 linking...
-Program Size: Code=10616 RO-data=2052 RW-data=264 ZI-data=7344  
-".\UARTInts.axf" - 0 Error(s), 4 Warning(s).
-Load "C:\\445M\\Lab2\\UARTInts.axf" 
-Connecting: Mode=JTAG, Speed=1000000Hz
-Erase Done.
-Programming Done.
-Verify OK.
+Program Size: Code=10908 RO-data=2052 RW-data=272 ZI-data=7344  
+".\UARTInts.axf" - 0 Error(s), 6 Warning(s).
 </pre>
 </body>
 </html>
-Ints.axf" 
+RTInts.axf" 
 Connecting: Mode=JTAG, Speed=1000000Hz
 Erase Done.
 Programming Done.
 Verify OK.
-
- Warning(s).
-Load "C:\\445M\\Lab2\\UARTInts.axf" 
+onnecting: Mode=JTAG, Speed=1000000Hz
+Connection failed!, error code=&d
+Error: Flash Download failed  -  Target DLL has been cancelled
+Load "C:\\EE445M\\Lab2\\UARTInts.axf" 
 Connecting: Mode=JTAG, Speed=1000000Hz
 Erase Done.
 Programming Done.

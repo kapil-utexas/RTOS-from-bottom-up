@@ -17,7 +17,7 @@
 #include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
-#define NUMBEROFTHREADS 10
+#define NUMBEROFTHREADS 50
 
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
@@ -54,7 +54,7 @@ void OS_Init()
 	PLL_Init(Bus80MHz);
 	
 	//ADC_Init(0);
-	UART_Init();              					 // initialize UART
+	//UART_Init();              					 // initialize UART
 	
 	//construct linked list
 	for (counter = 0; counter<NUMBEROFTHREADS - 1; counter++)
@@ -67,7 +67,7 @@ void OS_Init()
 	RunPt = '\0';
 	SchedulerPt = '\0';
 	SleepPt = '\0';
-	Timer2_Init(20000); //1 ms period for taking time!!!!!!
+	//Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
@@ -539,7 +539,7 @@ void traverseSleep(void)
 //Fifo stuff
 // Two-index implementation of the transmit FIFO
 // can hold 0 to TXFIFOSIZE elements
-#define TXFIFOSIZE 2 // must be a power of 2
+#define TXFIFOSIZE 128 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
 typedef unsigned long txDataType;
