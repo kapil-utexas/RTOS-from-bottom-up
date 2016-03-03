@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\UARTInts.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\UARTInts.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5.03 [Build 76]: Last Updated: Wed Mar 02 21:28:39 2016
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5.03 [Build 76]: Last Updated: Thu Mar 03 15:10:29 2016
 <BR><P>
 <H3>Maximum Stack Usage =        232 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1024,13 +1024,11 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[c5]"></a>OS_Fifo_Put</STRONG> (Thumb, 76 bytes, Stack size 8 bytes, os.o(i.OS_Fifo_Put))
+<P><STRONG><a name="[c5]"></a>OS_Fifo_Put</STRONG> (Thumb, 58 bytes, Stack size 8 bytes, os.o(i.OS_Fifo_Put))
 <BR><BR>[Stack]<UL><LI>Max Depth = 24 + Unknown Stack Size
 <LI>Call Chain = OS_Fifo_Put &rArr; OS_Signal
 </UL>
-<BR>[Calls]<UL><LI><a href="#[c1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_bWait
-<LI><a href="#[c2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_bSignal
-<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Signal
+<BR>[Calls]<UL><LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Signal
 </UL>
 <BR>[Called By]<UL><LI><a href="#[7f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Producer
 </UL>
@@ -1181,7 +1179,6 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ST7735_Message
 <LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_MailBox_Send
 <LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_MailBox_Recv
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Fifo_Put
 <LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Fifo_Get
 </UL>
 
@@ -1195,7 +1192,6 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ST7735_Message
 <LI><a href="#[a8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_MailBox_Send
 <LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_MailBox_Recv
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Fifo_Put
 <LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Fifo_Get
 </UL>
 
@@ -1553,7 +1549,7 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_Launch
 </UL>
 
-<P><STRONG><a name="[bf]"></a>addDeadToScheduler</STRONG> (Thumb, 150 bytes, Stack size 12 bytes, os.o(i.addDeadToScheduler))
+<P><STRONG><a name="[bf]"></a>addDeadToScheduler</STRONG> (Thumb, 156 bytes, Stack size 12 bytes, os.o(i.addDeadToScheduler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 12<LI>Call Chain = addDeadToScheduler
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;OS_AddThread

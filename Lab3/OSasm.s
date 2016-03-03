@@ -16,6 +16,8 @@
 		EXTERN  traverseSleep
 		EXTERN  switched
 		EXTERN  nextBeforeSwitch	
+		EXTERN  higherPriorityAdded
+		EXTERN  SchedulerPt
         EXPORT  OS_DisableInterrupts
         EXPORT  OS_EnableInterrupts
         EXPORT  PendSV_Handler
@@ -62,8 +64,20 @@ PendSV_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
 	LDRB R3, [R2] ;loadvalue of flag
 	CMP R3, #0
 	BNE Switch_Routine
-	BEQ NoSwitch_Routine
-Switch_Routine
+	LDR R2, =higherPriorityAdded
+	LDRB R3, [R2] ;load value of flag... if 1, a higher priority was added and need to update runpt to beginning of list
+	CMP R3, #0
+	BNE Higher_Priority_Switch
+	BEQ Normal_Context_Switch
+Higher_Priority_Switch
+	MOV R3,#0 ;constant to clear the flag
+	STRB R3,[R2] ;clear the flag, flag was 1
+	LDR R1, =SchedulerPt
+	LDR R1, [R1] ;R1 now points to higher priority thread
+	STR R1, [R0] ;update runPt
+	LDR SP, [R1] ;localSp to SP
+	B END_ROUTINE
+Switch_Routine ;used for kill and sleep
 	MOV R3,#0
 	STRB R3, [R2] ;clear the flag
 	LDR R1, =nextBeforeSwitch
@@ -71,7 +85,7 @@ Switch_Routine
 	STR R1, [R0] ;update runPT
 	LDR SP, [R1]
 	B END_ROUTINE
-NoSwitch_Routine	
+Normal_Context_Switch	
 	LDR R1, [R1,#4] ;load nextpt
 	STR R1, [R0] ;update RunPt
 	LDR SP, [R1] ;R1 points to the first element of the struct we want to switch to

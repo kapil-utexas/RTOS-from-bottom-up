@@ -32,7 +32,7 @@ struct PeriodicThread{
 	uint32_t period;
 	uint32_t timeLeft;
 	uint32_t priority;
-	struct PeriodicThread * nextPeriodicThread; //pointer to next TCB
+	struct PeriodicThread * nextPeriodicThread; //pointer to next 
 	void(*task)(void);
 };
 // feel free to change the type of semaphore, there are lots of good solutions

@@ -223,7 +223,7 @@ unsigned long OS_ReadPeriodicTime(){
 
 //this will be run by the time set in OS_Launch
 //Right now initialized to 1ms
-//ASSUMING 1 MS UNITS FOR PERIODIC THREADS
+//ASSUMING .5 MS UNITS FOR PERIODIC THREADS
 void Timer1A_Handler(){
 	TIMER1_ICR_R = TIMER_ICR_TATOCINT;  // acknowledge timer1A timeout
 	int32_t status;
@@ -320,7 +320,7 @@ void OS_bSignal(Sema4Type *semaPt)
 	OS_EnableInterrupts();
 }
 
-
+uint8_t higherPriorityAdded = 0;
 void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 	(*toFix).localSp = (*toFix).stack + stackSize - 16; //point to the bottom of the new stack
 	(*toFix).stack[stackSize - 1] = 0x01000000; //thumb bit
@@ -370,6 +370,9 @@ static void addDeadToScheduler(struct TCB ** from)
 				SchedulerPt = (*from); //move pointer backwards (almost finishes addition, need to wrap)
 				(*finalNode).nextTCB = SchedulerPt; //wrap around to what we just added
 				*from = temp; //move pointer to the right (finished deletion)
+				//need to context switch here
+				higherPriorityAdded = 1; //flag
+				
 			}
 			else //gonna be added after first element
 			{
@@ -728,7 +731,6 @@ int OS_Fifo_Put(unsigned long data)
 uint32_t samplesConsumed;
 unsigned long OS_Fifo_Get(void)
 {
-
 		OS_Wait(&dataAvailable);
 		OS_bWait(&mutex);
 		unsigned long toReturn;

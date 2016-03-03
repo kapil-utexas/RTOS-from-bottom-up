@@ -134,7 +134,8 @@ m32.d -o.\pid_stm32.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC:\K
 ARM Macro Assembler    Page 3 
 
 
-eil\ARM\Inc\Luminary --list=.\pid_stm32.lst PID_stm32.s
+eil\ARM\Inc\Luminary --predefine="__EVAL SETA 1" --list=.\pid_stm32.lst PID_stm
+32.s
 
 
 
@@ -182,4 +183,4 @@ Symbol: PrevError
       At line 51 in file PID_stm32.s
 Comment: PrevError used once
 2 symbols
-345 symbols in table
+346 symbols in table
