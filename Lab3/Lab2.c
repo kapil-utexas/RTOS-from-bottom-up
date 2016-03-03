@@ -51,11 +51,11 @@ long MaxJitter;             // largest time jitter between interrupts in usec
 
 
 unsigned long JitterHistogram[JITTERSIZE]={0,};
-#define PE0  (*((volatile unsigned long *)0x40024004))
-#define PE1  (*((volatile unsigned long *)0x40024008))
-#define PE2  (*((volatile unsigned long *)0x40024010))
-#define PE3  (*((volatile unsigned long *)0x40024020))
-
+#define PB2  (*((volatile unsigned long *)0x40005010))
+#define PB3  (*((volatile unsigned long *)0x40005020))
+#define PB4  (*((volatile unsigned long *)0x40005040))
+#define PB5  (*((volatile unsigned long *)0x40005080))
+	
 #define PF4                     (*((volatile unsigned long *)0x40025040))
 #define PF3                     (*((volatile unsigned long *)0x40025020))
 #define PF2                     (*((volatile unsigned long *)0x40025010))
@@ -86,7 +86,16 @@ void PortF_Init(void){ volatile unsigned long delay;
   GPIO_PORTF_AMSEL_R &= ~0x0E;      // disable analog functionality on PF
 }
 
-
+void PortB_Init(void){ unsigned long volatile delay;
+  SYSCTL_RCGC2_R |= 0x02;       // activate port B
+  delay = SYSCTL_RCGC2_R;        
+  delay = SYSCTL_RCGC2_R;         
+  GPIO_PORTB_DIR_R |= 0x3C;    // make PB5-2 output heartbeats
+  GPIO_PORTB_AFSEL_R &= ~0x3C;   // disable alt funct on PB5-2
+  GPIO_PORTB_DEN_R |= 0x3C;     // enable digital I/O on PB5-2
+  GPIO_PORTB_PCTL_R = ~0x00FFFF00;
+  GPIO_PORTB_AMSEL_R &= ~0x3C;      // disable analog functionality on PB
+}
 
 
 
@@ -107,7 +116,45 @@ static unsigned long n=3;   // 3, 4, or 5
   y[n-3] = y[n];         // two copies of filter outputs too
   return y[n];
 } 
-
+//******** DAS *************** 
+// background thread, calculates 60Hz notch filter
+// runs 2000 times/sec
+// samples channel 4, PD3,
+// inputs:  none
+// outputs: none
+unsigned long const JitterSize=JITTERSIZE;
+unsigned long DASoutput;
+void DAS(void){ 
+unsigned long input;  
+unsigned static long LastTime;  // time at previous ADC sample
+unsigned long thisTime;         // time at current ADC sample
+long jitter;                    // time between measured and expected, in us
+  if(NumSamples < RUNLENGTH){   // finite time run
+    PB2 ^= 0x04;
+    input = ADC_In();           // channel set when calling ADC_Init
+    PB2 ^= 0x04;
+    thisTime = OS_Time();       // current time, 12.5 ns
+    DASoutput = Filter(input);
+    FilterWork++;        // calculation finished
+    if(FilterWork>1){    // ignore timing of first interrupt
+      unsigned long diff = OS_TimeDifference(LastTime,thisTime);
+      if(diff>PERIOD){
+        jitter = (diff-PERIOD+4)/8;  // in 0.1 usec
+      }else{
+        jitter = (PERIOD-diff+4)/8;  // in 0.1 usec
+      }
+      if(jitter > MaxJitter){
+        MaxJitter = jitter; // in usec
+      }       // jitter should be 0
+      if(jitter >= JitterSize){
+        jitter = JITTERSIZE-1;
+      }
+      JitterHistogram[jitter]++; 
+    }
+    LastTime = thisTime;
+    PB2 ^= 0x04;
+  }
+}
 //--------------end of Task 1-----------------------------
 
 //------------------Task 2--------------------------------
@@ -117,14 +164,14 @@ static unsigned long n=3;   // 3, 4, or 5
 // ***********ButtonWork*************
 void ButtonWork(void){
 unsigned long myId = OS_Id(); 
-  PE1 ^= 0x02;
+  PB3 ^= 0x08;
   ST7735_Message(1,0,"NumCreated =",NumCreated); 
-  PE1 ^= 0x02;
+  PB3 ^= 0x08;
   OS_Sleep(50);     // set this to sleep for 50msec
   ST7735_Message(1,1,"PIDWork     =",PIDWork);
   ST7735_Message(1,2,"DataLost    =",DataLost);
   ST7735_Message(1,3,"Jitter 0.1us=",MaxJitter);
-  PE1 ^= 0x02;
+  PB3 ^= 0x08;
   OS_Kill();  // done, OS does not return from a Kill
 } 
 
@@ -190,18 +237,15 @@ void Consumer(void){
 unsigned long data,DCcomponent;   // 12-bit raw ADC sample, 0 to 4095
 unsigned long t;                  // time in 2.5 ms
 unsigned long myId = OS_Id(); 
-  //ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz
-	//OS_DisableInterrupts();
-	ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz	//OS_EnableInterrupts();
-	
+  ADC_Collect(5, FS, &Producer); // start ADC sampling, channel 5, PD2, 400 Hz
   NumCreated += OS_AddThread(&Display,128,0); 
   while(NumSamples < RUNLENGTH) { 
-    PE2 = 0x04;
+    PB4 = 0x10;
     for(t = 0; t < 64; t++){   // collect 64 ADC samples
       data = OS_Fifo_Get();    // get from producer
       x[t] = data;             // real part is 0 to 4095, imaginary part is 0
     }
-    PE2 = 0x00;
+    PB4 = 0x00;
     cr4_fft_64_stm32(y,x,64);  // complex FFT of last 64 ADC values
     DCcomponent = y[0]&0xFFFF; // Real part at frequency 0, imaginary part should be zero
     OS_MailBox_Send(DCcomponent); // called every 2.5ms*64 = 160ms
@@ -215,15 +259,13 @@ unsigned long myId = OS_Id();
 // outputs: none
 void Display(void){ 
 unsigned long data,voltage;
-	//OS_DisableInterrupts();
   ST7735_Message(0,1,"Run length = ",(RUNLENGTH)/FS);   // top half used for Display
-	//OS_EnableInterrupts();
   while(NumSamples < RUNLENGTH) { 
     data = OS_MailBox_Recv();
     voltage = 3000*data/4095;               // calibrate your device so voltage is in mV
-    PE3 = 0x08;
+    PB5 = 0x20;
     ST7735_Message(0,2,"v(mV) =",voltage);  
-    PE3 = 0x00;
+    PB5 = 0x20;
   } 
   OS_Kill();  // done
 } 
@@ -242,7 +284,6 @@ short IntTerm;     // accumulated error, RPM-sec
 short PrevError;   // previous error, RPM
 short Coeff[3];    // PID coefficients
 short Actuator;
-
 void PID(void){ 
 short err;  // speed error, range -100 to 100 RPM
 unsigned long myId = OS_Id(); 
@@ -342,36 +383,25 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 	
 	}
 }
-// add the following commands, leave other commands, if they make sense
-// 1) print performance measures 
-//    time-jitter, number of data points lost, number of calculations performed
-//    i.e., NumSamples, NumCreated, MaxJitter, DataLost, FilterWork, PIDwork
-      
-// 2) print debugging parameters 
-//    i.e., x[], y[] 
-//--------------end of Task 5-----------------------------
-
 
 //*******************final user main DEMONTRATE THIS TO TA**********
 int main(void){ 
   OS_Init();           // initialize, disable interrupts
-  PortE_Init();
+  PortB_Init();
   DataLost = 0;        // lost data between producer and consumer
   NumSamples = 0;
   MaxJitter = 0;       // in 1us units
 
 //********initialize communication channels
   OS_MailBox_Init();
-  OS_Fifo_Init(2);    // ***note*** 4 is not big enough*****
+  OS_Fifo_Init(128);    // ***note*** 4 is not big enough*****
 	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
-
+	UART_Init();              					 // initialize UART
 //*******attach background tasks***********
   OS_AddSW1Task(&SW1Push,2);
 //  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
   ADC_Init(4);  // sequencer 3, channel 4, PD3, sampling in DAS()
-  OS_AddPeriodicThread(&Consumer,200,2); // 2 kHz real time sampling of PD3
-  OS_AddPeriodicThread(&PID,200,1); // 2 kHz real time sampling of PD3
-  OS_AddPeriodicThread(&Interpreter,200,4); // 2 kHz real time sampling of PD3
+  OS_AddPeriodicThread(&DAS,PERIOD,1); // 2 kHz real time sampling of PD3
 
   NumCreated = 0 ;
 // create initial foreground threads
@@ -382,5 +412,6 @@ int main(void){
   OS_Launch(TIME_2MS); // doesn't return, interrupts enabled in here
   return 0;            // this never executes
 }
+
 
 

@@ -17,7 +17,7 @@
 #include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
-#define NUMBEROFTHREADS 10
+#define NUMBEROFTHREADS 40
 #define NUMBEROFPERIODICTHREADS 3
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
@@ -83,7 +83,7 @@ void OS_Init()
 	SchedulerPt = '\0';
 	SleepPt = '\0';
 	PeriodPt = '\0';
-	Timer2_Init(20000); //1 ms period for taking time!!!!!!
+	//Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
@@ -97,7 +97,7 @@ void OS_Init()
 // In Lab 3, you should implement the user-defined TimeSlice field
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
-	Timer2_Init(TIME_1MS);
+	Timer2_Init(80);
 	RunPt = SchedulerPt; //make the first thread active
 	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
 	NVIC_ST_CTRL_R = 0x07; //enable systick
@@ -344,10 +344,11 @@ void SetInitialStack(struct TCB * toFix, uint32_t stackSize){
 	(*toFix).stack[stackSize - 15]= 0x05050505; //R5
 	(*toFix).stack[stackSize - 16]= 0x04040404; //R4
 }
-
-static void addThreadToScheduler(struct TCB ** from)
+//adds dead to scheduler
+//will add first node of a list to the scheduler
+static void addDeadToScheduler(struct TCB ** from)
 {
-
+	//if scheduler is empty, just add at the first location
 	if(SchedulerPt == '\0')
 	{
 		SchedulerPt = *from;
@@ -355,22 +356,43 @@ static void addThreadToScheduler(struct TCB ** from)
 		(*SchedulerPt).nextTCB = SchedulerPt;
 		
 	}
-	else
+	else //scheduler not empty
 	{
-		struct TCB * temp = SchedulerPt; //sleeping threads pointer
-		while((*temp).nextTCB != (SchedulerPt))
+		struct TCB * finalNode = SchedulerPt; //sleeping threads pointer
+		while((*finalNode).nextTCB != (SchedulerPt))
 		{
-			temp = (*temp).nextTCB;
+			finalNode = (*finalNode).nextTCB;
 		}
-		//now we are at the last node of the list
-		(*temp).nextTCB = *from;
-		*from = (*(*from)).nextTCB;
-		temp = (*temp).nextTCB; //get the element you just added to the list
-		(*temp).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
-	}
-	schedulerCount++;
-	deadCount--;
+		//now finalNode points to the last element of the scheduler that wraps around
+
+			struct TCB * temp = SchedulerPt; // pointer to traverse
+			//if priority is higher than first element, insert easily
+			if( (*(*from)).priority < (*SchedulerPt).priority) //gonna be added before first element 
+			{
+				temp = (*(*from)).nextTCB; //save before removing which node should be the first after removal
+				(*(*from)).nextTCB = SchedulerPt; //point node to first element of where it will be added
+				SchedulerPt = (*from); //move pointer backwards (almost finishes addition, need to wrap)
+				(*finalNode).nextTCB = SchedulerPt; //wrap around to what we just added
+				*from = temp; //move pointer to the right (finished deletion)
+			}
+			else //gonna be added after first element
+			{
+				while( ((*temp).nextTCB != (SchedulerPt)) &&  ((*(*from)).priority >= (*(*temp).nextTCB).priority)         ) 
+				{
+					temp = (*temp).nextTCB;
+				}
+				//now we are at the priority where we want to add to
+				struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
+				(*temp).nextTCB = *from; //make last node point to the one we want to add
+				*from = (*(*from)).nextTCB; //remove node from linked list
+				temp = (*temp).nextTCB; //go to element just added to the list
+				(*temp).nextTCB = nextBeforeAdding; 
+
+			}
+		}
 }
+
+
 
 //******** OS_AddThread *************** 
 // add a foregound thread to the scheduler
@@ -409,7 +431,7 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	SetInitialStack(DeadPt, stackSize);
 	(DeadPt)->stack[stackSize - 2] = (uint32_t)task; //push PC
 	uniqueId++;
-	addThreadToScheduler(&DeadPt);
+	addDeadToScheduler(&DeadPt);
 	return 1;
 }
 
@@ -559,7 +581,7 @@ int OS_AddSW1Task(void(*task)(void), unsigned long priority)
 		return 1;
 }
 
-static void wakeUpThread(struct TCB * thread)
+static void addSleepToScheduler(struct TCB * thread)
 {
 	struct TCB * prevToDelete = SleepPt;
 	(*thread).sleepState = 0;
@@ -567,23 +589,32 @@ static void wakeUpThread(struct TCB * thread)
 	(*thread).active = 1;
 	if(prevToDelete == thread) //if its the first element
 	{
+		
 		if(SchedulerPt == '\0')
 		{
 			SchedulerPt = thread; 
 			SleepPt = SleepPt->nextTCB; //remove from sleep pool
 			(*SchedulerPt).nextTCB = SchedulerPt; //point to itself
 		}
-		else
+		else //scheduler not empty
 		{
-			struct TCB * temp = SchedulerPt; //sleeping threads pointer
-			while((*temp).nextTCB != (SchedulerPt))
+			struct TCB * finalNode = SchedulerPt; //sleeping threads pointer
+			while((*finalNode).nextTCB != (SchedulerPt))
+			{
+				finalNode = (*finalNode).nextTCB;
+			}
+			//now finalNode points to the last element of the scheduler that wraps around
+			struct TCB * temp = SchedulerPt; 
+			while( ((*temp).nextTCB != (SchedulerPt)) &&  ((*thread).priority >= (*(*temp).nextTCB).priority))
 			{
 				temp = (*temp).nextTCB;
 			}
-			//now we are at the last node of the list
+			//now we are at the priority where we want to add to
+			struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
 			(*temp).nextTCB = thread;
 			SleepPt = SleepPt->nextTCB; //remove from sleep pool
-			(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+			temp = (*temp).nextTCB; //temp now equals thread
+			(*temp).nextTCB = nextBeforeAdding;  //restore connection
 		}
 	}
 	else
@@ -594,21 +625,23 @@ static void wakeUpThread(struct TCB * thread)
 		}
 		if(SchedulerPt == '\0')
 		{
-			SchedulerPt = (*prevToDelete).nextTCB;
+			SchedulerPt = (*prevToDelete).nextTCB; //should add thread passed as parameter
 			(*prevToDelete).nextTCB = prevToDelete->nextTCB->nextTCB;
 			(*SchedulerPt).nextTCB = SchedulerPt;
 		}
 		else
 		{
 			struct TCB * temp = SchedulerPt; //sleeping threads pointer
-			while((*temp).nextTCB != (SchedulerPt))
+			while( ((*temp).nextTCB != (SchedulerPt)) &&  ((*thread).priority >= (*(*temp).nextTCB).priority))
 			{
 				temp = (*temp).nextTCB;
 			}
-			//now we are at the last node of the list
+			//now we are at the priority where we want to add to
+			struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
 			(*temp).nextTCB = thread;
 			(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
-			(*thread).nextTCB = SchedulerPt; // point it to the beginning of the list (for circular)
+			temp = (*temp).nextTCB; //temp now equals thread
+			(*temp).nextTCB = nextBeforeAdding;  //restore connection
 		}
 	}
 	schedulerCount++;
@@ -627,7 +660,7 @@ void traverseSleep(void)
 		if( (*temp).sleepState <=0  && (*temp).needToWakeUp != 1) //if sleep was given a time to wake up 
 		{
 			toRestore = (*temp).nextTCB; //since we are taking node out, need to restore where we were
-			wakeUpThread(temp); //take node out of sleep and put into scheduler
+			addSleepToScheduler(temp); //take node out of sleep and put into scheduler
 			temp = toRestore; //restore to be able to go to next thread
 		}		
 		if(temp  == '\0')
@@ -846,7 +879,7 @@ unsigned long OS_MailBox_Recv(void)
 
 long SW1MaxJitter;             // largest time jitter between interrupts in usec
 
-unsigned long const JitterSize=JITTERSIZE;
+unsigned long const SW1JitterSize=JITTERSIZE;
 unsigned long SW1JitterHistogram[JITTERSIZE]={0,};
 void OS_SW1Jitter(uint32_t period)
 {
@@ -868,14 +901,14 @@ void OS_SW1Jitter(uint32_t period)
 		if(jitter > SW1MaxJitter){
 			SW1MaxJitter = jitter; // in usec
 		}       // jitter should be 0
-		if(jitter >= JitterSize){
+		if(jitter >= SW1JitterSize){
 			jitter = JITTERSIZE-1;
 		}
 		SW1JitterHistogram[jitter]++; 
 	}
 	LastTime = thisTime;
 }
-
+unsigned long const SW2JitterSize=JITTERSIZE;
 long SW2MaxJitter;             // largest time jitter between interrupts in usec
 unsigned long SW2JitterHistogram[JITTERSIZE]={0,};
 void OS_SW2Jitter(uint32_t period)
@@ -898,7 +931,7 @@ void OS_SW2Jitter(uint32_t period)
 		if(jitter > SW2MaxJitter){
 			SW2MaxJitter = jitter; // in usec
 		}       // jitter should be 0
-		if(jitter >= JitterSize){
+		if(jitter >= SW2JitterSize){
 			jitter = JITTERSIZE-1;
 		}
 		SW2JitterHistogram[jitter]++; 
