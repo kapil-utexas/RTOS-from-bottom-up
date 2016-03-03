@@ -88,24 +88,9 @@ void OS_Init()
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
   NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
 }
-//******** OS_Launch *************** 
-// start the scheduler, enable interrupts
-// Inputs: number of 12.5ns clock cycles for each time slice
-//         you may select the units of this parameter
-// Outputs: none (does not return)
-// In Lab 2, you can ignore the theTimeSlice field
-// In Lab 3, you should implement the user-defined TimeSlice field
-// It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
-void OS_Launch(unsigned long theTimeSlice){
-	Timer2_Init(80);
-	RunPt = SchedulerPt; //make the first thread active
-	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
-	NVIC_ST_CTRL_R = 0x07; //enable systick
-	StartOS();
-	while(1);
-}
+
 uint32_t howManyTimes = 0;
-static void Timer1A_Init(unsigned long period, unsigned long priority){
+static void Timer1A_Init(unsigned long period){
 	volatile uint32_t delay;
 	SYSCTL_RCGCTIMER_R |= 0x02;      // activate timer1
 	delay = SYSCTL_RCGCTIMER_R;          // allow time to finish activating
@@ -117,13 +102,29 @@ static void Timer1A_Init(unsigned long period, unsigned long priority){
 	TIMER1_TAPR_R = 0;            // 5) bus clock resolution
   TIMER1_IMR_R = 0x00000001;// enable timeout (rollover) interrupt
   TIMER1_ICR_R = 0x00000001;// clear timer1A timeout flag
-	priority &= 0x7; //keep the last 3 bits
-//	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF1FFF)| priority<<15 ; // bit 15, 14, 13 for Timer1A 
-	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF00FF)| priority<<15; // 8) priority 4
+	NVIC_PRI5_R = (NVIC_PRI5_R&0xFFFF00FF)| 1<<15; // 8) priority 4 // bit 15, 14, 13 for Timer1A 
   NVIC_EN0_R |=	1<<21;              // enable interrupt 21 in NVIC in a friendly manner
   TIMER1_CTL_R |= 0x00000001;  // enable timer1A 32-b, periodic, interrupts
 	
 }
+//******** OS_Launch *************** 
+// start the scheduler, enable interrupts
+// Inputs: number of 12.5ns clock cycles for each time slice
+//         you may select the units of this parameter
+// Outputs: none (does not return)
+// In Lab 2, you can ignore the theTimeSlice field
+// In Lab 3, you should implement the user-defined TimeSlice field
+// It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
+void OS_Launch(unsigned long theTimeSlice){
+	Timer2_Init(80);
+	Timer1A_Init(40000); 
+	RunPt = SchedulerPt; //make the first thread active
+	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
+	NVIC_ST_CTRL_R = 0x07; //enable systick
+	StartOS();
+	while(1);
+}
+
 
 
 
@@ -193,13 +194,8 @@ void removeAndAddToSingleList(struct PeriodicThread ** from, unsigned long  peri
 }
 
 int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long priority){
-	static uint8_t alreadyEnabled = 0;
 	int32_t status;
 	status = StartCritical();
-	if(alreadyEnabled == 0)
-	{
-		Timer1A_Init(80000, priority); 
-	}
 	//now need to add to linked list
 	if(DeadPeriodicPt == '\0') //cant add this thread
 	{
