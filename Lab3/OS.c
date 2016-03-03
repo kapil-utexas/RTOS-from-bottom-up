@@ -705,18 +705,17 @@ void OS_Fifo_Init(unsigned long size)
 // Since this is called by interrupt handlers 
 //  this function can not disable or enable interrupts
 int OS_Fifo_Put(unsigned long data)
-{
-		
+{		
 		//OS_Wait(&roomLeft);
-		OS_bWait(&mutex);
+		//OS_bWait(&mutex);
 		if((OS_TxPutI-OS_TxGetI) & ~(TXFIFOSIZE-1))
 		{
-			OS_bSignal(&mutex);
+			//OS_bSignal(&mutex);
 			return TXFIFOFAIL;
 		}
 		TxFifo[OS_TxPutI&(TXFIFOSIZE-1)] = data; // put
 		OS_TxPutI++;  // Success, update
-		OS_bSignal(&mutex);
+		//OS_bSignal(&mutex);
 		OS_Signal(&dataAvailable);
 		return(TXFIFOSUCCESS);
 }
