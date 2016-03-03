@@ -18,7 +18,7 @@
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
 #define NUMBEROFTHREADS 10
-
+#define NUMBEROFPERIODICTHREADS 3
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
 int32_t StartCritical(void);
@@ -29,9 +29,14 @@ struct TCB * RunPt; //scheduler pointer
 struct TCB * DeadPt; //dead threads pointer
 struct TCB * SleepPt; //sleeping threads pointer
 struct TCB * SchedulerPt; //sleeping threads pointer
+struct PeriodicThread periodicPool[NUMBEROFPERIODICTHREADS];
+struct PeriodicThread * DeadPeriodicPt = '\0';
+struct PeriodicThread * PeriodPt;
 //counters to keep track of how many elements are in each pool
-uint32_t schedulerCount; 
+uint32_t schedulerCount;
+uint32_t periodicCount;
 uint32_t deadCount;
+uint32_t deadPeriodicCount;
 uint32_t sleepCount;
 
 struct TCB threadPool[NUMBEROFTHREADS];
@@ -62,11 +67,22 @@ void OS_Init()
 		threadPool[counter].nextTCB = &threadPool[(counter + 1)]; //address of next TCB
 	}
 	threadPool[NUMBEROFTHREADS - 1].nextTCB = '\0'; 
+	//lab3 linked list for periodic threads
+	for (counter = 0; counter<NUMBEROFPERIODICTHREADS - 1; counter++)
+	{
+		periodicPool[counter].nextPeriodicThread = &periodicPool[(counter + 1)]; //address of next TCB
+	}
+	periodicPool[NUMBEROFPERIODICTHREADS - 1].nextPeriodicThread = '\0'; 
+	
+	
 	DeadPt = &threadPool[0]; //point to first element of not active threads 
+	DeadPeriodicPt = &periodicPool[0];
 	deadCount = NUMBEROFTHREADS;
+	deadPeriodicCount = NUMBEROFPERIODICTHREADS;
 	RunPt = '\0';
 	SchedulerPt = '\0';
 	SleepPt = '\0';
+	PeriodPt = '\0';
 	Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
@@ -81,7 +97,7 @@ void OS_Init()
 // In Lab 3, you should implement the user-defined TimeSlice field
 // It is ok to limit the range of theTimeSlice to match the 24-bit SysTick
 void OS_Launch(unsigned long theTimeSlice){
-	Timer2_Init(80);
+	Timer2_Init(TIME_1MS);
 	RunPt = SchedulerPt; //make the first thread active
 	NVIC_ST_RELOAD_R = theTimeSlice - 1; //timeslice is given in clock cycles 
 	NVIC_ST_CTRL_R = 0x07; //enable systick
@@ -118,16 +134,64 @@ int millisecondsToCount(uint32_t period)
 	return period * MILLISECONDCOUNT; 
 	
 }
-void(*task1)(void) = '\0';
-static uint32_t task1Period;
-void(*task2)(void) = '\0';
-static uint32_t task2Period;
-void(*task3)(void) = '\0';
-static uint32_t task3Period;
+
 //input:
 //task: pointer to a function
 //period: 32 bit number for clock period
 //priority: will be a three bit number from 0 to 7
+
+
+void removeAndAddToSingleList(struct PeriodicThread ** from, unsigned long  period, void(*task)(void), unsigned long priority)
+{
+	if( PeriodPt == '\0') //no periodic threads are running
+	{
+		PeriodPt = *from; //this gets the pointer to the dead periodic pool 
+		*from = (*(*from)).nextPeriodicThread; //remove node from the linked list
+		//(*PeriodPt).nextPeriodicThread = PeriodPt; 
+		(*PeriodPt).nextPeriodicThread = '\0'; //make it not circular
+		//now need to setup node added
+		(*PeriodPt).period = period;
+		(*PeriodPt).task = task;
+		(*PeriodPt).timeLeft = period;
+		(*PeriodPt).priority = priority;
+	}
+	else //at least one periodic thread is running
+	{
+		struct PeriodicThread * temp = PeriodPt; // pointer to traverse
+		//if priority is higher than first element, insert easily
+		if(priority < (*PeriodPt).priority) //gonna be added before first element 
+		{
+			temp = (*(*from)).nextPeriodicThread ; //save before removing which node should be the first after removal
+			(*(*from)).nextPeriodicThread = PeriodPt; //point node to first element of where it will be added
+			PeriodPt = (*from); //move pointer backwards (finishes addition)
+			*from = temp; //move pointer to the right (finished deletion)
+			(*PeriodPt).period = period;
+			(*PeriodPt).task = task;
+			(*PeriodPt).timeLeft = period;
+			(*PeriodPt).priority = priority;
+		}
+		else //gonna be added after first element
+		{
+			while( (*temp).nextPeriodicThread != '\0' &&  (priority >= (*(*temp).nextPeriodicThread).priority)         ) 
+			{
+				temp = (*temp).nextPeriodicThread;
+			}
+			//now we are at the priority where we want to add to
+			(*temp).nextPeriodicThread = *from; //make last node point to the one we want to add
+			*from = (*(*from)).nextPeriodicThread; //remove node from linked list
+			temp = (*temp).nextPeriodicThread; //go to element just added to the list
+			(*temp).nextPeriodicThread = '\0'; // make it non circular
+			//now need to setup node added
+			(*temp).period = period;
+			(*temp).task = task;
+			(*temp).timeLeft = period;
+			(*temp).priority = priority;
+		}
+	}
+	periodicCount++;
+	deadPeriodicCount--;
+}
+
 int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long priority){
 	static uint8_t alreadyEnabled = 0;
 	int32_t status;
@@ -136,28 +200,18 @@ int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long 
 	{
 		Timer1A_Init(80000, priority); 
 	}
-	EndCritical(status );	
-	if(task1 == '\0')
+	//now need to add to linked list
+	if(DeadPeriodicPt == '\0') //cant add this thread
 	{
-		task1 = task;
-		task1Period = period;
+		OS_DisableInterrupts();
+		while(1){};
 	}
-	else if(task2 == '\0')
-	{
-		task2=task;
-		task2Period = period;
-	}
-	else if(task3 == '\0')
-	{
-		task3 = task;
-		task3Period = period;
-	}
-	else
-	{
-		return -1; //cant add
-	}
+	removeAndAddToSingleList(&DeadPeriodicPt, period, task, priority);
+	EndCritical(status );
 	return 0; //added sucesfully
 }
+
+
 
 //will clear global timer 
 void OS_ClearMsTime(){
@@ -171,28 +225,30 @@ unsigned long OS_ReadPeriodicTime(){
 	return timerCounter;
 }
 
+//this will be run by the time set in OS_Launch
+//Right now initialized to 1ms
+//ASSUMING 1 MS UNITS FOR PERIODIC THREADS
 void Timer1A_Handler(){
 	TIMER1_ICR_R = TIMER_ICR_TATOCINT;  // acknowledge timer1A timeout
 	int32_t status;
 	status = StartCritical();
-	uint32_t currentTime;
-	currentTime = timerCounter / 1000;
-	if( task1Period != 0 &&(currentTime % task1Period == 0))
+	//need to traverse linked list of peridoc threads
+	struct PeriodicThread * tempTraversal = PeriodPt;
+	if(PeriodPt != '\0') //at least one periodic thread has been added
 	{
-		(*task1)();
+		while(tempTraversal != '\0')
+		{
+			(*tempTraversal).timeLeft --; //decrease 1ms
+			if((*tempTraversal).timeLeft == 0) //need to run!
+			{
+				(*tempTraversal).timeLeft = (*tempTraversal).period; //reset time left
+				(*(*tempTraversal).task)(); //run the task
+			}
+			tempTraversal = (*tempTraversal).nextPeriodicThread; //finished running or checking, go to next node
+		}
+		
 	}
-	if( task2Period != 0 &&(currentTime % task2Period == 0))
-	{
-		(*task2)();
-	}
-	if( task3Period != 0 &&(currentTime % task3Period == 0))
-	{
-		(*task3)();
-	}
-	//void (*temp)(void) = &BackgroundThread1c;
-	//timerCounter++;
-	//(*temp)();
-	//(*PeriodicTask)();
+
 	EndCritical(status);	
 }
 

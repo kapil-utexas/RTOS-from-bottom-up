@@ -28,6 +28,13 @@ struct TCB{
 	uint8_t blockedState; //flag
 };
 
+struct PeriodicThread{
+	uint32_t period;
+	uint32_t timeLeft;
+	uint32_t priority;
+	struct PeriodicThread * nextPeriodicThread; //pointer to next TCB
+	void(*task)(void);
+};
 // feel free to change the type of semaphore, there are lots of good solutions
 struct  Sema4{
   long Value;   // >0 means free, otherwise means busy        

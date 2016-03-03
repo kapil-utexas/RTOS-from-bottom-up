@@ -369,7 +369,9 @@ int main(void){
   OS_AddSW1Task(&SW1Push,2);
 //  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
   ADC_Init(4);  // sequencer 3, channel 4, PD3, sampling in DAS()
-  //OS_AddPeriodicThread(&DAS,PERIOD,1); // 2 kHz real time sampling of PD3
+  OS_AddPeriodicThread(&Consumer,200,2); // 2 kHz real time sampling of PD3
+  OS_AddPeriodicThread(&PID,200,1); // 2 kHz real time sampling of PD3
+  OS_AddPeriodicThread(&Interpreter,200,4); // 2 kHz real time sampling of PD3
 
   NumCreated = 0 ;
 // create initial foreground threads
