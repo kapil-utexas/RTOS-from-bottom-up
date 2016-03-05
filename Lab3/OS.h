@@ -37,7 +37,8 @@ struct PeriodicThread{
 };
 // feel free to change the type of semaphore, there are lots of good solutions
 struct  Sema4{
-  long Value;   // >0 means free, otherwise means busy        
+  long Value;   // >0 means free, otherwise means busy       
+	struct TCB * blockedThreads;
 // add other components here, if necessary to implement blocking
 };
 typedef struct Sema4 Sema4Type;
@@ -48,6 +49,7 @@ typedef struct Sema4 Sema4Type;
 //The units of this system time are the period of
 //interrupt passed since initializing with OS_AddPeriodicThread or last reset.
 unsigned long OS_ReadPeriodicTime(void);
+
 
 
 //END OF ADDED BY RAMON AND KAPIL

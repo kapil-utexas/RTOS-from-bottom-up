@@ -38,9 +38,12 @@ uint32_t periodicCount;
 uint32_t deadCount;
 uint32_t deadPeriodicCount;
 uint32_t sleepCount;
-
+uint8_t switched = 0;
 struct TCB threadPool[NUMBEROFTHREADS];
 void Timer2_Init(unsigned long value);
+static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime);
+struct TCB * nextBeforeSwitch;
+static void addDeadToScheduler(struct TCB ** from);
 
 //OSasm definitions
 void OS_DisableInterrupts(void); // Disable interrupts
@@ -86,7 +89,8 @@ void OS_Init()
 	//Timer2_Init(20000); //1 ms period for taking time!!!!!!
 	NVIC_ST_CTRL_R = 0;         // disable SysTick during setup
   NVIC_ST_CURRENT_R = 0;      // any write to current clears it
-  NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7
+  NVIC_SYS_PRI3_R =(NVIC_SYS_PRI3_R&0x00FFFFFF)|0xE0000000; // priority 7 on systick
+	NVIC_SYS_PRI3_R = (NVIC_SYS_PRI3_R & 0xFF1FFFFF) |  0x00E00000; //priority 7 on pendsv
 }
 
 uint32_t howManyTimes = 0;
@@ -248,6 +252,97 @@ void Timer1A_Handler(){
 	EndCritical(status);	
 }
 
+void addThreadToBlocked(struct TCB ** toAdd)
+{
+	struct TCB * removed;
+	struct TCB * temp;
+	
+	(*RunPt).active = 0;
+	(*RunPt).blockedState = 1;
+	//remove from active 
+	temp = SchedulerPt;
+	
+	if(RunPt == temp) //first element
+	{
+		if(schedulerCount == 0)
+		{
+			OS_DisableInterrupts();
+			while(1){};
+		}
+		if(schedulerCount == 1)
+		{
+			OS_DisableInterrupts();
+			removed = SchedulerPt; //store before we remove
+			SchedulerPt = '\0';
+			while(1){};
+		}
+		else //remove and fix
+		{
+			while((*temp).nextTCB != (SchedulerPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			//now at end of Scheduler pool
+			(*temp).nextTCB = (*SchedulerPt).nextTCB;
+			removed = SchedulerPt; //store before we remove
+			SchedulerPt = (*SchedulerPt).nextTCB;
+			nextBeforeSwitch = SchedulerPt; //hax
+		}
+	}
+	else //not the first element, could be middle or end (theres no end in circular)
+	{
+			while((*temp).nextTCB != (RunPt))
+			{
+				temp = (*temp).nextTCB;
+			}
+			nextBeforeSwitch = temp->nextTCB->nextTCB; //hax
+			removed = (*temp).nextTCB;
+			(*temp).nextTCB = (*(*temp).nextTCB).nextTCB; //remove from linked list
+	}
+	//now we have the node we took out in the "removed" variable	
+	
+	temp = *toAdd;
+	if(temp == '\0')
+	{
+		*toAdd = removed;
+		(*removed).nextTCB = '\0';
+	}
+	else
+	{
+		struct TCB * temp = (*toAdd); 
+		if((*removed).priority < (*(*toAdd)).priority) // gonna be added at beginning
+		{
+				temp = (*(*toAdd)).nextTCB; //save before removing which node should be the first after removal
+				(*toAdd) = removed;
+				(*removed).nextTCB = temp; //point node to first element of where it will be added
+		}
+		else
+		{
+			while( ((*temp).nextTCB != '\0') &&  ((*removed).priority >= (*(*temp).nextTCB).priority))
+			{
+				temp = (*temp).nextTCB;
+			}
+				//now we are at the priority where we want to add to
+			struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
+			(*temp).nextTCB = removed;
+			temp = (*temp).nextTCB; //temp now equals thread
+			(*temp).nextTCB = nextBeforeAdding;  //restore connection
+		}
+	}
+	schedulerCount--;
+}
+
+// ******** OS_Block ************
+// place this thread into a blocked state
+// input:  none
+// output: none
+// OS_Sleep(0) implements cooperative multitasking
+void OS_Block(Sema4Type *semaPt)
+{
+	addThreadToBlocked(&(*semaPt).blockedThreads);
+	switched = 1;
+}
+
 // ******** OS_InitSemaphore ************
 // initialize semaphore before launch OS
 // input:  pointer to a semaphore
@@ -255,6 +350,7 @@ void Timer1A_Handler(){
 void OS_InitSemaphore(Sema4Type *semaPt, long value)
 {
 	(*semaPt).Value = value;
+	(*semaPt).blockedThreads = '\0';
 }
 
 // ******** OS_Wait ************
@@ -265,16 +361,17 @@ void OS_InitSemaphore(Sema4Type *semaPt, long value)
 // output: none
 void OS_Wait(Sema4Type *semaPt)
 {
-	
-	OS_DisableInterrupts();
-	while((*semaPt).Value == 0)
+	uint32_t status;
+	status = StartCritical();
+	(*semaPt).Value--; //decrease count
+	while((*semaPt).Value < 0)
 	{
+		OS_Block(semaPt); //block and put into semaphore blocked list
+		OS_Suspend();
 		OS_EnableInterrupts();
 		OS_DisableInterrupts();
 	} 
-	(*semaPt).Value--; //decrease count
-	OS_EnableInterrupts();
-
+	EndCritical(status);
 }
 
 // ******** OS_Signal ************
@@ -288,6 +385,12 @@ void OS_Signal(Sema4Type *semaPt)
 	int32_t status;
 	status = StartCritical();
 	(*semaPt).Value ++;
+	if((*semaPt).Value <= 0) 
+	{
+		(*(*semaPt).blockedThreads).active = 1;
+		(*(*semaPt).blockedThreads).blockedState = 0;
+		addDeadToScheduler(&(*semaPt).blockedThreads); //addDead is similar to what we want to do. Just takes first element of linked list and adds to scheduler
+	}
 	EndCritical(status );
 
 }
@@ -299,14 +402,17 @@ void OS_Signal(Sema4Type *semaPt)
 // output: none
 void OS_bWait(Sema4Type *semaPt)
 {
-	OS_DisableInterrupts();
+	int32_t status;
+	status = StartCritical();
 	while((*semaPt).Value == 0)
 	{
+		OS_Block(semaPt); //block and put into semaphore blocked list
+		OS_Suspend();
 		OS_EnableInterrupts();
 		OS_DisableInterrupts();
 	} //while someone has the semaphor
 	(*semaPt).Value = 0; //take the semaphore
-	OS_EnableInterrupts();
+	EndCritical(status );
 }
 // ******** OS_bSignal ************
 // Lab2 spinlock, set to 1
@@ -315,9 +421,16 @@ void OS_bWait(Sema4Type *semaPt)
 // output: none
 void OS_bSignal(Sema4Type *semaPt)
 {
-	OS_DisableInterrupts();
+	int32_t status;
+	status = StartCritical();
 	(*semaPt).Value = 1;
-	OS_EnableInterrupts();
+	if((*semaPt).blockedThreads != '\0')
+	{
+		(*(*semaPt).blockedThreads).active = 1;
+		(*(*semaPt).blockedThreads).blockedState = 0;
+		addDeadToScheduler(&(*semaPt).blockedThreads); //addDead is similar to what we want to do. Just takes first element of linked list and adds to scheduler
+	}
+	EndCritical(status );
 }
 
 uint8_t higherPriorityAdded = 0;
@@ -407,16 +520,8 @@ static void addDeadToScheduler(struct TCB ** from)
 uint8_t uniqueId=0; //make unique ids
 int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long priority)
 {
-	/*
-	threadPool[uniqueId].id = uniqueId; //unique id
-	threadPool[uniqueId].active = 1;
-	threadPool[uniqueId].sleepState = 0; //flag
-	threadPool[uniqueId].priority = priority; 
-	threadPool[uniqueId].blockedState = 0; //flag
-	SetInitialStack(&threadPool[uniqueId], stackSize);
-	threadPool[uniqueId].stack[stackSize - 2] = (uint32_t)task; //push PC
-	uniqueId++;
-	*/
+	uint32_t status;
+	status = StartCritical();
 	//we will take the first thread from the dead pool
 	if(DeadPt == '\0')
 	{
@@ -437,6 +542,8 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	{
 		OS_Suspend();
 	}
+	EndCritical(status);
+	
 	return 1;
 }
 
@@ -452,8 +559,7 @@ void OS_Suspend(){
 }
 
 
-uint8_t switched = 0;
-struct TCB * nextBeforeSwitch;
+
 static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 {
 	struct TCB * removed;
@@ -540,12 +646,10 @@ void OS_Kill(void)
 	OS_DisableInterrupts();
 	threadRemover(&DeadPt, 0); //parameter 0 will be ignored
 	deadCount++;
-	if(higherPriorityAdded == 0) //you switch normal way, otherwise need to run higher priority task
-	{
-		switched = 1;
-	}
-	OS_EnableInterrupts();
+	switched = 1;
 	OS_Suspend();
+	OS_EnableInterrupts();
+
 }
 
 // ******** OS_Sleep ************
@@ -560,13 +664,9 @@ void OS_Sleep(unsigned long sleepTime)
 	OS_DisableInterrupts();
 	threadRemover(&SleepPt, sleepTime * 2);
 	sleepCount++;
-	if(higherPriorityAdded == 0) //you switch normal way, otherwise need to run higher priority task
-	{
-		switched = 1;
-	}
-	OS_EnableInterrupts();
+	switched = 1;
 	OS_Suspend();
-
+	OS_EnableInterrupts();
 }
 
 //******** OS_AddSW1Task *************** 
