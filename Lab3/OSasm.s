@@ -97,20 +97,20 @@ END_ROUTINE
 	
 SysTick_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
 	CPSID I
-	PUSH{R4-R11} ;push remaining registers
-	LDR R0, =RunPt ;old run pointer
-	LDR R1, [R0] ;now R1 points the the current TCB running
+	;PUSH{R4-R11} ;push remaining registers
+	;LDR R0, =RunPt ;old run pointer
+	;LDR R1, [R0] ;now R1 points the the current TCB running
 				 ;this means R1 = TCB.localSP 	
-	STR SP, [R1] ;store stack into local stack pointer of TCB
+	;STR SP, [R1] ;store stack into local stack pointer of TCB
 	;added
 	PUSH{R0-R1, LR}
 	BL 	traverseSleep
 	POP{R0-R1, LR}
 	;added
-	LDR R1, [R1,#4] ;load nextpt
-	STR R1, [R0] ;update RunPt
-	LDR SP, [R1] ;R1 points to the first element of the struct we want to switch to
-	POP {R4-R11} ;pop remainining registers
+	;LDR R1, [R1,#4] ;load nextpt
+	;STR R1, [R0] ;update RunPt
+	;LDR SP, [R1] ;R1 points to the first element of the struct we want to switch to
+	;POP {R4-R11} ;pop remainining registers
 	CPSIE I
 	BX LR
 
