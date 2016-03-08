@@ -28,7 +28,7 @@
 // Inputs:  pointer to a function to call on touch (falling edge),
 //          pointer to a function to call on release (rising edge)
 // Outputs: none 
-void Switch_Init(void(*touchtask)(void), uint8_t priority);
+void Switch_Init(void(*touchtask)(void), uint8_t priority, uint8_t switchToInit);
 
 // Wait for switch to be pressed 
 // There will be minimum time delay from touch to when this function returns

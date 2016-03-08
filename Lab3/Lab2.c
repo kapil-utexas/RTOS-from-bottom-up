@@ -181,7 +181,7 @@ unsigned long myId = OS_Id();
 // background threads execute once and return
 void SW1Push(void){
   if(OS_MsTime() > 20){ // debounce
-    if(OS_AddThread(&ButtonWork,100,4)){
+    if(OS_AddThread(&ButtonWork,100,2)){
       NumCreated++; 
     }
     OS_ClearMsTime();  // at least 20ms between touches
@@ -193,7 +193,7 @@ void SW1Push(void){
 // background threads execute once and return
 void SW2Push(void){
   if(OS_MsTime() > 20){ // debounce
-    if(OS_AddThread(&ButtonWork,100,4)){
+    if(OS_AddThread(&ButtonWork,100,2)){
       NumCreated++; 
     }
     OS_ClearMsTime();  // at least 20ms between touches
@@ -399,7 +399,7 @@ int main(void){
 	UART_Init();              					 // initialize UART
 //*******attach background tasks***********
   OS_AddSW1Task(&SW1Push,2);
-//  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
+  OS_AddSW2Task(&SW2Push,2);  // add this line in Lab 3
   ADC_Init(4);  // sequencer 3, channel 4, PD3, sampling in DAS()
   OS_AddPeriodicThread(&DAS,1,1); // 2 kHz real time sampling of PD3
   //10 will run every .5ms... decrease in period occurss every .5 ms

@@ -684,13 +684,29 @@ void OS_Sleep(unsigned long sleepTime)
 //           determines the relative priority of these four threads
 int OS_AddSW1Task(void(*task)(void), unsigned long priority)
 {
-		if(DeadPt == '\0')
-		{
-			return 0;
-		}
-		Switch_Init(task,priority);
+		Switch_Init(task,priority, 4);
 		return 1;
 }
+
+//******** OS_AddSW2Task *************** 
+// add a background task to run whenever the SW1 (PF4) button is pushed
+// Inputs: pointer to a void/void background function
+//         priority 0 is the highest, 5 is the lowest
+// Outputs: 1 if successful, 0 if this thread can not be added
+// It is assumed that the user task will run to completion and return
+// This task can not spin, block, loop, sleep, or kill
+// This task can call OS_Signal  OS_bSignal	 OS_AddThread
+// This task does not have a Thread ID
+// In labs 2 and 3, this command will be called 0 or 1 times
+// In lab 2, the priority field can be ignored
+// In lab 3, there will be up to four background threads, and this priority field 
+//           determines the relative priority of these four threads
+int OS_AddSW2Task(void(*task)(void), unsigned long priority)
+{
+		Switch_Init(task,priority, 0);
+		return 1;
+}
+
 
 static void addSleepToScheduler(struct TCB * thread)
 {
@@ -747,15 +763,16 @@ static void addSleepToScheduler(struct TCB * thread)
 		{
 			prevToDelete = (*prevToDelete).nextTCB;
 		}
-		struct TCB * finalNode = SchedulerPt; //sleeping threads pointer
+		struct TCB * finalNode = SchedulerPt; 
 		while((*finalNode).nextTCB != (SchedulerPt))
 		{
 			finalNode = (*finalNode).nextTCB;
 		}
 		if(SchedulerPt == '\0') //if scheduler empty
 		{
+			struct TCB * nextBeforeDeletion = (*thread).nextTCB;; //active threads pointer
 			SchedulerPt = (*prevToDelete).nextTCB; //should add thread passed as parameter
-			(*prevToDelete).nextTCB = prevToDelete->nextTCB->nextTCB;
+			(*prevToDelete).nextTCB = nextBeforeDeletion;
 			(*SchedulerPt).nextTCB = SchedulerPt;
 		}
 		else //scheduler not empty
@@ -767,7 +784,7 @@ static void addSleepToScheduler(struct TCB * thread)
 				(*thread).nextTCB = SchedulerPt; //point node to first element of where it will be added
 				SchedulerPt = (thread); //move pointer backwards (almost finishes addition, need to wrap)
 				(*finalNode).nextTCB = SchedulerPt; //wrap around to what we just added
-				(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
+				(*prevToDelete).nextTCB = temp;
 				//need to context switch here
 				higherPriorityAdded = 1; //flag					
 			}
@@ -778,9 +795,10 @@ static void addSleepToScheduler(struct TCB * thread)
 					temp = (*temp).nextTCB;
 				}
 				//now we are at the priority where we want to add to
+				struct TCB * nextBeforeDeletion = (*thread).nextTCB;; //active threads pointer
 				struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
-				(*temp).nextTCB = thread;
-				(*prevToDelete).nextTCB = prevToDelete ->nextTCB->nextTCB;
+				(*temp).nextTCB = thread; //temp points to where we want to add
+				(*prevToDelete).nextTCB = nextBeforeDeletion;
 				temp = (*temp).nextTCB; //temp now equals thread
 				(*temp).nextTCB = nextBeforeAdding;  //restore connection
 			}
