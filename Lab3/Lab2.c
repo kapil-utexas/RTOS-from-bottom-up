@@ -394,7 +394,7 @@ int main(void){
 
 //********initialize communication channels
   OS_MailBox_Init();
-  OS_Fifo_Init(128);    // ***note*** 4 is not big enough*****
+  OS_Fifo_Init(32);    // ***note*** 4 is not big enough*****
 	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 	UART_Init();              					 // initialize UART
 //*******attach background tasks***********

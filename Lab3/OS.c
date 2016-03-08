@@ -21,6 +21,7 @@
 #define NUMBEROFPERIODICTHREADS 3
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
+ uint32_t timerMsCounter = 0;
 int32_t StartCritical(void);
 void EndCritical(int32_t primask);
 
@@ -215,7 +216,7 @@ int OS_AddPeriodicThread(void(*task)(void), unsigned long period, unsigned long 
 
 //will clear global timer 
 void OS_ClearMsTime(){
-	timerCounter = 0;
+	timerMsCounter = 0;
 }
 
 //Will return the current 32-bit global counter. 
@@ -836,7 +837,7 @@ void traverseSleep(void)
 //Fifo stuff
 // Two-index implementation of the transmit FIFO
 // can hold 0 to TXFIFOSIZE elements
-#define TXFIFOSIZE 2 // must be a power of 2
+#define TXFIFOSIZE 32 // must be a power of 2
 #define TXFIFOSUCCESS 1
 #define TXFIFOFAIL    0
 typedef unsigned long txDataType;
@@ -955,6 +956,7 @@ void Timer2_Init(unsigned long period){
 void Timer2A_Handler(void){
   TIMER2_ICR_R = TIMER_ICR_TATOCINT;// acknowledge TIMER2A timeout
   timerCounter+=1;
+	timerMsCounter += 1;
 }
 
 
@@ -967,7 +969,7 @@ void Timer2A_Handler(void){
 
 unsigned long OS_MsTime(void)
 {
-	return timerCounter /1000; //hardcoded
+	return timerMsCounter * 10000; //hardcoded
 }
 
 // ******** OS_Time ************
