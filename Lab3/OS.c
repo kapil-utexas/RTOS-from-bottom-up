@@ -365,7 +365,7 @@ void OS_Wait(Sema4Type *semaPt)
 	uint32_t status;
 	status = StartCritical();
 	(*semaPt).Value--; //decrease count
-	while((*semaPt).Value < 0)
+	if((*semaPt).Value < 0)
 	{
 		OS_Block(semaPt); //block and put into semaphore blocked list
 		OS_Suspend();
