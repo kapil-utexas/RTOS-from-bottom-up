@@ -1,0 +1,112 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;/******************************************************
+                       ***********************/
+    2 00000000         ; OS.s: low-level OS commands, written in assembly      
+                                        */
+    3 00000000         ; Runs on LM4F120/TM4C123
+    4 00000000         ; OS functions.
+    5 00000000         ; Ramon Villar, Kapil
+    6 00000000         ; February, 9, 2016
+    7 00000000         
+    8 00000000         
+    9 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   10 00000000                 THUMB
+   11 00000000                 REQUIRE8
+   12 00000000                 PRESERVE8
+   13 00000000         
+   14 00000000                 EXTERN           RunPt       ; currently running
+                                                             thread
+   15 00000000         ;EXPORT  OS_DisableInterrupts
+   16 00000000         ;EXPORT  OS_EnableInterrupts
+   17 00000000         ;EXPORT  StartOS
+   18 00000000         ;EXPORT  SysTick_Handler
+   19 00000000                 EXPORT           Context_Switch
+   20 00000000         
+   21 00000000         
+   22 00000000         
+   23 00000000         
+   24 00000000         ;SysTick_Handler                ; 1) Saves R0-R3,R12,LR,
+                       PC,PSR
+   25 00000000         Context_Switch
+   26 00000000 B672            CPSID            I
+   27 00000002         ;we can assume that R0-R3, R12, LR, PC, PSRX are in stac
+                       k because of interrupt
+   28 00000002 E92D 0FF0       PUSH{R4-R11}                 ;push remaining reg
+                                                            isters
+   29 00000006 4806            LDR              R0, =RunPt  ;old run pointer
+   30 00000008 6801            LDR              R1, [R0]    ;now R1 points the 
+                                                            the current TCB run
+                                                            ning
+   31 0000000A         ;this means R1 = TCB.localSP  
+   32 0000000A F8C1 D000       STR              SP, [R1]    ;store stack into l
+                                                            ocal stack pointer 
+                                                            of TCB
+   33 0000000E 6848            LDR              R0, [R1,#4]
+   34 00000010 6801            LDR              R1, [R0]    ;R1 points to the f
+                                                            irst element of the
+                                                             struct we want to 
+                                                            switch to
+   35 00000012 F8D1 D000       LDR              SP, [R1]    ; SP = new stack po
+                                                            inter
+   36 00000016 E8BD 0FF0       POP              {R4-R11}    ;pop remainining re
+                                                            gisters
+   37 0000001A B662            CPSIE            I
+   38 0000001C 4770            BX               LR
+   39 0000001E         
+   40 0000001E 00 00           ALIGN
+   41 00000020                 END
+              00000000 
+Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork --depend=.\os.d -
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+o.\os.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC:\Keil\ARM\Inc\Lu
+minary --list=.\os.lst OS.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 9 in file OS.s
+   Uses
+      None
+Comment: .text unused
+Context_Switch 00000000
+
+Symbol: Context_Switch
+   Definitions
+      At line 25 in file OS.s
+   Uses
+      At line 19 in file OS.s
+Comment: Context_Switch used once
+2 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+External symbols
+
+RunPt 00000000
+
+Symbol: RunPt
+   Definitions
+      At line 14 in file OS.s
+   Uses
+      At line 29 in file OS.s
+Comment: RunPt used once
+1 symbol
+335 symbols in table
