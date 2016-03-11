@@ -403,17 +403,17 @@ void OS_Signal(Sema4Type *semaPt)
 // output: none
 void OS_bWait(Sema4Type *semaPt)
 {
-	int32_t status;
+	uint32_t status;
 	status = StartCritical();
-	while((*semaPt).Value == 0)
+	(*semaPt).Value--; //decrease count
+	if((*semaPt).Value < 0)
 	{
 		OS_Block(semaPt); //block and put into semaphore blocked list
 		OS_Suspend();
 		OS_EnableInterrupts();
 		OS_DisableInterrupts();
-	} //while someone has the semaphor
-	(*semaPt).Value = 0; //take the semaphore
-	EndCritical(status );
+	} 
+	EndCritical(status);
 }
 // ******** OS_bSignal ************
 // Lab2 spinlock, set to 1
@@ -424,8 +424,8 @@ void OS_bSignal(Sema4Type *semaPt)
 {
 	int32_t status;
 	status = StartCritical();
-	(*semaPt).Value = 1;
-	if((*semaPt).blockedThreads != '\0')
+	(*semaPt).Value ++;
+	if((*semaPt).Value <= 0) 
 	{
 		(*(*semaPt).blockedThreads).active = 1;
 		(*(*semaPt).blockedThreads).blockedState = 0;
