@@ -5,8 +5,23 @@
 #include "efile.h"
 #include "edisk.h"
 #include "string.h"
-#define MAXNUMBEROFFILES 10
-#define NUMBEROFBLOCKS 100
+#define NUMBEROFBLOCKS 15625000
+#define FILESIZEONDIRECTORY 21
+#define MAXNUMBEROFFILES (512)/FILESIZEONDIRECTORY //this is for one block
+#define FIRSTDATAINDEX 6
+#define LASTDATAINDEX 511
+struct file Directory [MAXNUMBEROFFILES];
+
+void readDirectoryFromDisk(void);
+void updateDirectoryToDisk(void);
+int32_t StartCritical(void);
+void EndCritical(int32_t primask);
+struct Sema4 semaphorePool[MAXNUMBEROFFILES]; 
+struct Sema4 printingMutex5;
+struct Sema4 readingMutex4;
+struct Sema4 readerMutex3;
+struct Sema4 directoryMutex2;
+struct Sema4 fileMutex1; //global file mutex... only one file open at a time
 //---------- eFile_Init-----------------
 // Activate the file system, without formating
 // Input: none
@@ -15,9 +30,29 @@
 //    the disk periodic task operating
 int eFile_Init(void) // initialize file system
 {
-	return eDisk_Init(0);	
+	if(eDisk_Status(0) == 0) //if already initialized
+	{
+		return 1;
+	}
+	OS_InitSemaphore(&printingMutex5, 1);
+	OS_InitSemaphore(&readingMutex4,1);
+	OS_InitSemaphore(&readerMutex3,1);
+	OS_InitSemaphore(&directoryMutex2,1);
+	OS_InitSemaphore(&fileMutex1,1); 
+	eDisk_Init(0);
+	readDirectoryFromDisk();
+	for(int i = 0; i < MAXNUMBEROFFILES; i++) //asign semaphores. Even to free space file!
+	{
+		if(Directory[i].valid == 1)
+		{
+			OS_InitSemaphore(&semaphorePool[i],1);
+			Directory[i].semaphorePt = &semaphorePool[i];
+		}
+	}
+	updateDirectoryToDisk();
+	return 0;	
 }
-struct file Directory [MAXNUMBEROFFILES];
+
 //ASSUMPTIONS
 //Directory[0] will contain the free space available
 //First four bytes of each block will contain next address. EXCEPT FOR BLOCK 0 BECAUSE THAT'S THE DIRECTORY (NOT A FILE!)
@@ -26,56 +61,127 @@ struct file Directory [MAXNUMBEROFFILES];
 void readDirectoryFromDisk()
 {
 		unsigned char buff[512];
+	  uint32_t status;
+		status = StartCritical();
 		eDisk_ReadBlock(buff, 0); //read directory in block 0
 		for(int i = 0; i < MAXNUMBEROFFILES; i++)
 		{
-			Directory[i].valid = buff[i * 17];
+			Directory[i].valid = buff[i * FILESIZEONDIRECTORY];
 			//Construct file name
 			for(int j = 0 ; j < 8 ; j ++ )
 			{
-				Directory[i].name[j] = buff[((i*17) + 1 ) + j];
+				Directory[i].name[j] = buff[((i*FILESIZEONDIRECTORY) + 1 ) + j];
 			}
 			uint32_t tempStartingBlock = 0;
 			for(int j = 0 ; j < 3 ; j ++ )
 			{
-				tempStartingBlock = (buff[((i*17) + 9 ) + j] << ((3 - j) * 8));
+				tempStartingBlock |= (buff[((i*FILESIZEONDIRECTORY) + 9 ) + j] << ((3 - j) * 8));
 			}
 			Directory[i].startingBlock = tempStartingBlock;
 			
 			uint32_t tempSize = 0;
 			for(int j = 0 ; j < 3 ; j ++ )
 			{
-				tempSize = (buff[((i*17) + 13 ) + j] << ((3 - j) * 8));
+				tempSize |= (buff[((i*FILESIZEONDIRECTORY) + 13 ) + j] << ((3 - j) * 8));
 			}			
 			Directory[i].size = tempSize;
 		}
+		EndCritical(status);
 }
 
 void updateDirectoryToDisk()
 {
 		unsigned char buff[512];
+	  uint32_t status;
+		status = StartCritical();
 		for(int i = 0; i < MAXNUMBEROFFILES; i++)
 		{
-			buff[i * 17] = Directory[i].valid;
+			buff[i * FILESIZEONDIRECTORY] = Directory[i].valid;
 			//Construct file name
 			for(int j = 0 ; j < 8 ; j ++ )
 			{
-				 buff[((i*17) + 1 ) + j] = Directory[i].name[j] ;
+				 buff[((i*FILESIZEONDIRECTORY) + 1 ) + j] = Directory[i].name[j] ;
 			}
 			//this writes starting block into the buffer
-			buff[9 + i* 17] = (Directory[i].startingBlock >> (24)) & 0xFF;
-			buff[10 + i* 17] = (Directory[i].startingBlock >> (16) & 0xFF);
-			buff[11 + i* 17] = (Directory[i].startingBlock >> (8) & 0xFF);
-			buff[12 + i* 17] = (Directory[i].startingBlock & 0xFF);
+			buff[9 + i* FILESIZEONDIRECTORY] = (Directory[i].startingBlock >> (24)) & 0xFF;
+			buff[10 + i* FILESIZEONDIRECTORY] = (Directory[i].startingBlock >> (16) & 0xFF);
+			buff[11 + i* FILESIZEONDIRECTORY] = (Directory[i].startingBlock >> (8) & 0xFF);
+			buff[12 + i* FILESIZEONDIRECTORY] = (Directory[i].startingBlock & 0xFF);
 			//this writes the size of each file
-			buff[13 + i* 17] = (Directory[i].size >> (24)) & 0xFF;
-			buff[14 + i* 17] = (Directory[i].size >> (16) & 0xFF);
-			buff[15 + i* 17] = (Directory[i].size >> (8) & 0xFF);
-			buff[16 + i* 17] = (Directory[i].size & 0xFF);				
+			buff[13 + i* FILESIZEONDIRECTORY] = (Directory[i].size >> (24)) & 0xFF;
+			buff[14 + i* FILESIZEONDIRECTORY] = (Directory[i].size >> (16) & 0xFF);
+			buff[15 + i* FILESIZEONDIRECTORY] = (Directory[i].size >> (8) & 0xFF);
+			buff[16 + i* FILESIZEONDIRECTORY] = (Directory[i].size & 0xFF);				
 		}
 		eDisk_WriteBlock(buff, 0);
+		EndCritical(status);
 }
-//this function traverses until the end of a linked list of the passed file, and returns the last node that points to null
+
+//returns the next block integer of a given block number
+uint32_t getNextBlockNumber(uint32_t blockNumber)
+{
+			unsigned char buff [512];
+			eDisk_ReadBlock(buff, blockNumber);
+			uint32_t tempNextBlock = 0;
+			for(int j = 0 ; j < 3 ; j ++ )
+			{
+					tempNextBlock |= (buff[j] << ((3 - j) * 8));
+			}
+			return tempNextBlock;
+}
+
+//returns the next block integer of a given block number
+uint32_t getBufferNextBlockNumber(unsigned char buff[])
+{
+			uint32_t tempNextBlock = 0;
+			for(int j = 0 ; j < 3 ; j ++ )
+			{
+					tempNextBlock |= (buff[j] << ((3 - j) * 8));
+			}
+			return tempNextBlock;
+}
+
+//returns the number of bytes of data in block number
+// max data in block: 512 - 6 = 506 in each block..
+//buff[6] -> buff[511]
+uint16_t getBlockDataSize(uint32_t blockNumber)
+{
+			unsigned char buff [512];
+			eDisk_ReadBlock(buff, blockNumber);
+			uint16_t tempSize = 0;
+			tempSize = buff[4] << 8;
+			tempSize |= buff[5];
+			return tempSize;
+}
+
+uint16_t getBufferDataSize(unsigned char buff[])
+{
+			uint16_t tempSize = 0;
+			tempSize = buff[4] << 8;
+			tempSize |= buff[5];
+			return tempSize;
+}
+
+
+uint16_t setBlockDataSize(uint32_t blockNumber, uint16_t size)
+{
+			unsigned char buff [512];
+			eDisk_ReadBlock(buff, blockNumber);
+			buff[4] = (size>>8)&0xFF;
+			buff[5] = (size) &0xFF;
+			eDisk_WriteBlock(buff,blockNumber);
+			return 0;
+}
+
+uint16_t setBufferDataSize(unsigned char buff [], uint16_t size)
+{
+			buff[4] = (size>>8)&0xFF;
+			buff[5] = (size) &0xFF;
+			return 0;
+}
+
+
+//this function traverses until the end of a linked list of the passed file, and returns the last block number that points to null
 uint32_t traverseUntilTheEnd(struct file * toTraverse)
 {
 		uint32_t nextBlockNumber = toTraverse->startingBlock;
@@ -89,7 +195,7 @@ uint32_t traverseUntilTheEnd(struct file * toTraverse)
 			uint32_t tempNextBlock = 0;
 			for(int j = 0 ; j < 3 ; j ++ )
 			{
-					tempNextBlock = (buff[j] << ((3 - j) * 8));
+					tempNextBlock |= (buff[j] << ((3 - j) * 8));
 			}
 			currentBlockNumber = nextBlockNumber; //before we move on. store where you are
 			nextBlockNumber = tempNextBlock;			
@@ -99,7 +205,7 @@ uint32_t traverseUntilTheEnd(struct file * toTraverse)
 
 //this function appends the starting block a file to the given block number (e.g. last of free space to start of file)
 //the starting block of the file is taken from the index of the directory passed as a parameter
-void appendFileToLastBlock(uint32_t blockNumber, uint32_t fileIndex)
+void appendFirstBlockOfFileToBlock(uint32_t blockNumber, uint32_t fileIndex)
 {			unsigned char buff[512];
 			eDisk_ReadBlock(buff, blockNumber);
 			buff[0] = (Directory[fileIndex].startingBlock >> (24)) & 0xFF;
@@ -109,15 +215,31 @@ void appendFileToLastBlock(uint32_t blockNumber, uint32_t fileIndex)
 			eDisk_WriteBlock(buff, blockNumber);
 }
 
+//reads block, changes the next block number, and writes it back into disk
 void appendBlock(uint32_t blockNumber, uint32_t blockNumberToAdd)
 {
 			unsigned char buff[512];
+			eDisk_ReadBlock(buff, blockNumber);
 			buff[0] = (blockNumberToAdd >> (24)) & 0xFF;
 			buff[1] = (blockNumberToAdd >> (16)) & 0xFF;
 			buff[2] = (blockNumberToAdd >> (8)) & 0xFF;
 			buff[3] = blockNumberToAdd & 0xFF;
 			eDisk_WriteBlock(buff, blockNumber);
 		
+}
+
+//get the first free space node, and point to null
+//returns a free node pointing to null..
+uint32_t getFreeBlock()
+{
+			//get next free space from Directory[0] and append it to file being created
+			uint32_t nextBlock = getNextBlockNumber(Directory[0].startingBlock); //provides next block after first block of starting free space
+																																					 //will be used to remove node from linked list and append next
+			uint32_t temp = Directory[0].startingBlock;
+			Directory[0].startingBlock = nextBlock;
+			appendBlock(temp, -1); //point it to null
+			
+			return temp;
 }
 //---------- eFile_Format-----------------
 // Erase all files, create blank directory, initialize free space manager
@@ -134,7 +256,7 @@ int eFile_Format(void) // erase disk, add format
 		{
 			Directory[i].valid = 0; //kill file
 			lastFreeBlockNumber = traverseUntilTheEnd(&Directory[0]); //traverses the empty until the end
-			appendFileToLastBlock(lastFreeBlockNumber, i);
+			appendFirstBlockOfFileToBlock(lastFreeBlockNumber, i);
 		}
 	}
 	else //need to create new directory
@@ -151,24 +273,131 @@ int eFile_Format(void) // erase disk, add format
 	updateDirectoryToDisk();
 	return 0;
 }
+
+//this function searches for a file name in the directroy, 
+//output: 0 if not found (succesful)
+//				-1 if found
+uint32_t findDuplicateIndex(char toSearch[])
+{
+	for(int j = 1; j< MAXNUMBEROFFILES; j++)
+	{
+		if(Directory[j].valid == 1)
+		{
+			if(strcmp(Directory[j].name, toSearch) == 0)
+			{
+				return j; //duplicate
+			}
+		}
+	}
+	return -1; //no duplicate
+}
+
 //---------- eFile_Create-----------------
 // Create a new, empty file with one allocated block
 // Input: file name is an ASCII string up to seven characters 
 // Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
-int eFile_Create( char name[]);  // create new file, make it empty 
+int eFile_Create( char name[])  // create new file, make it empty 
+{
+	//file name doesnt exist, so create
+	//since format was called before this function, directory is the most recent one
+	for(int i = 1; i < MAXNUMBEROFFILES; i++)
+	{
+		OS_Wait(&directoryMutex2);
+		if(Directory[i].valid != 1) //place the file in this empty slot
+		{
+			if(findDuplicateIndex(name) != -1)
+			{
+				OS_Signal(&directoryMutex2);
+				return 1;
+			}
+			Directory[i].valid = 1;
+			OS_Signal(&directoryMutex2);
+			strcpy(Directory[i].name,name);
+			//get next free space from Directory[0] and append it to file being created
+			Directory[i].startingBlock = getFreeBlock();
+			Directory[i].size = 0; //size in bytes of data...
+			//now create semaphore
+			OS_InitSemaphore(&semaphorePool[i],1);
+			Directory[1].semaphorePt = &semaphorePool[i];
+			//now release semaphore
+			return 0;
+		}
+		OS_Signal(&directoryMutex2);
+	}
+	return 1; //no empty file found
+}
 
-
+//will handle the global file opened
+//if -1, no files are open
+uint32_t fileOpenIndex;
+unsigned char openedFileBuffer[512];
+uint32_t lastOpenedBlock;
 //---------- eFile_WOpen-----------------
 // Open the file, read into RAM last block
-// Input: file name is a single ASCII letter
+// Input: file name is a seven char ASCII word
 // Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
-int eFile_WOpen(char name[]);      // open a file for writing 
+int eFile_WOpen(char name[])      // open a file for writing 
+{
+	OS_Wait(&fileMutex1); //global sema for files.. only one open at a time
+	OS_Wait(&directoryMutex2);
+	uint32_t fileIndex = findDuplicateIndex(name);
+	OS_Signal(&directoryMutex2);
+	if(fileIndex != -1) //file exists
+	{
+		fileOpenIndex = fileIndex;
+		//read last block into openedFileBuffer
+		uint32_t lastBlock = traverseUntilTheEnd(&Directory[fileOpenIndex]);
+		eDisk_ReadBlock(openedFileBuffer,lastBlock);
+		lastOpenedBlock = lastBlock;
+		return 0;
+	}
+	return 1;
+}
+
+//---------- eFile_WClose-----------------
+// close the file, left disk in a state power can be removed
+// Input: none
+// Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
+int eFile_WClose(void) // close the file for writing
+{
+	if(fileOpenIndex == -1)
+	{
+		return 1;
+	}
+	updateDirectoryToDisk();
+	fileOpenIndex = -1;
+	lastOpenedBlock = -1;
+	OS_Signal(&fileMutex1);
+	return 0;
+}
+
+/* WARNING ******************************************************************
+	 FIRST FOUR BYTES ARE FOR NEXT BLOCK
+   NEXT TWO BYTES ARE FOR SIZE
+   USABLE INDECES FOR DATA ARE buff[6] -> buff[511]
+****************************************************************************/
 
 //---------- eFile_Write-----------------
 // save at end of the open file
+// latest block stored in openedFileBuffer...
 // Input: data to be saved
 // Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
-int eFile_Write( char data);  
+int eFile_Write( char data)
+{
+	uint16_t blockSize = getBufferDataSize(openedFileBuffer);
+	if(blockSize > LASTDATAINDEX) //need to make new block
+	{
+		lastOpenedBlock = getFreeBlock();
+		appendBlock(lastOpenedBlock,lastOpenedBlock);
+		eDisk_ReadBlock(openedFileBuffer,lastOpenedBlock);
+		setBufferDataSize(openedFileBuffer, 0); 
+		blockSize = 0;
+	}
+	openedFileBuffer[ (blockSize + FIRSTDATAINDEX) ] = data;
+	setBufferDataSize(openedFileBuffer, ++blockSize); 
+	Directory[fileOpenIndex].size++;
+	return 0;
+}
 
 //---------- eFile_Close-----------------
 // Deactivate the file system
@@ -177,53 +406,173 @@ int eFile_Write( char data);
 int eFile_Close(void); 
 
 
-//---------- eFile_WClose-----------------
-// close the file, left disk in a state power can be removed
-// Input: none
-// Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
-int eFile_WClose(void); // close the file for writing
-
+uint32_t numberOfThreadsReading;
+uint32_t nextByteToReadIndex = FIRSTDATAINDEX;
+uint32_t totalBytesRead = 0;
 //---------- eFile_ROpen-----------------
 // Open the file, read first block into RAM 
 // Input: file name is a single ASCII letter
 // Output: 0 if successful and 1 on failure (e.g., trouble read to flash)
-int eFile_ROpen( char name[]);      // open a file for reading 
-   
+int eFile_ROpen( char name[])      // open a file for reading 
+{
+	OS_Wait(&readerMutex3);
+	numberOfThreadsReading++;
+	if(numberOfThreadsReading == 1)
+	{
+		OS_Wait(&fileMutex1);
+	}
+
+	OS_Wait(&directoryMutex2);
+	uint32_t fileIndex = findDuplicateIndex(name);
+	OS_Signal(&directoryMutex2);
+	if(fileIndex != -1) //file exists
+	{
+		fileOpenIndex = fileIndex;
+		//read last block into openedFileBuffer
+		eDisk_ReadBlock(openedFileBuffer,Directory[fileOpenIndex].startingBlock);
+		lastOpenedBlock = Directory[fileOpenIndex].startingBlock;
+		OS_Signal(&readerMutex3);
+		return 0; //file exists!
+	}
+	OS_Signal(&readerMutex3);
+	return 1; //file did not exist
+}
+
+//---------- eFile_RClose-----------------
+// close the reading file
+// Input: none
+// Output: 0 if successful and 1 on failure (e.g., wasn't open)
+int eFile_RClose(void) // close the file for writing
+{
+	OS_Wait(&readerMutex3);
+	if(fileOpenIndex == -1)
+	{
+		OS_Signal(&readerMutex3);
+		return 1;
+	}
+	numberOfThreadsReading--;
+	if(numberOfThreadsReading == 0)
+	{
+		fileOpenIndex = -1;
+		lastOpenedBlock = -1;
+		nextByteToReadIndex = FIRSTDATAINDEX;
+		OS_Signal(&fileMutex1);
+	}
+	OS_Signal(&readerMutex3);
+	return 0;
+}
+
+/*
+//will handle the global file opened
+//if -1, no files are open
+uint32_t fileOpenIndex;
+unsigned char openedFileBuffer[512];
+uint32_t lastOpenedBlock;
+*/
+
 //---------- eFile_ReadNext-----------------
 // retreive data from open file
 // Input: none
 // Output: return by reference data
 //         0 if successful and 1 on failure (e.g., end of file)
-int eFile_ReadNext( char *pt);       // get next byte 
-                              
-//---------- eFile_RClose-----------------
-// close the reading file
-// Input: none
-// Output: 0 if successful and 1 on failure (e.g., wasn't open)
-int eFile_RClose(void); // close the file for writing
-
+int eFile_ReadNext( char *pt)       // get next byte  
+{
+	OS_Wait(&readingMutex4);
+	if(totalBytesRead == Directory[fileOpenIndex].size)
+	{
+		totalBytesRead = 0;
+		nextByteToReadIndex = FIRSTDATAINDEX;
+		return 1;
+	}
+	
+	*pt = openedFileBuffer[nextByteToReadIndex++];
+	totalBytesRead++;
+	if(nextByteToReadIndex==512) //if read last one before
+	{
+		lastOpenedBlock = getBufferNextBlockNumber(openedFileBuffer);
+		eDisk_ReadBlock(openedFileBuffer,lastOpenedBlock);
+		nextByteToReadIndex = FIRSTDATAINDEX;
+	}
+	OS_Signal(&readingMutex4);
+	return 0;
+}
 //---------- eFile_Directory-----------------
 // Display the directory with filenames and sizes
 // Input: pointer to a function that outputs ASCII characters to display
 // Output: characters returned by reference
 //         0 if successful and 1 on failure (e.g., trouble reading from flash)
-int eFile_Directory(void(*fp)(unsigned char));   
+int eFile_Directory(void(*fp)(unsigned char))
+{
+	uint32_t filesPrinted = 0;
+	OS_Wait(&directoryMutex2);
+	for(int i = 1; i<MAXNUMBEROFFILES; i++)
+	{
+		if(Directory[i].valid == 1)
+		{
+			filesPrinted++;
+			for(int j = 0; j<6; j++)
+			{
+				fp(Directory[i].name[j]); 
+			}
+			fp(' ');
+			fp(((Directory[i].size >> (24)) & 0xFF) - '0');
+			fp((Directory[i].size >> (16) & 0xFF) - '0');
+			fp((Directory[i].size >> (8) & 0xFF) - '0');
+			fp((Directory[i].size & 0xFF) - '0');		
+			fp('\n');
+		}
+	}
+	if(filesPrinted == 0)
+	{
+		fp('E');
+		fp('M');
+		fp('P');
+		fp('T');
+		fp('Y');
+		fp('\n');
+	}
+	OS_Signal(&directoryMutex2);
+	return 0;
+}
 
 //---------- eFile_Delete-----------------
 // delete this file
 // Input: file name is a single ASCII letter
 // Output: 0 if successful and 1 on failure (e.g., trouble writing to flash)
-int eFile_Delete( char name[]);  // remove this file 
-
+int eFile_Delete( char name[])  // remove this file 
+{
+	OS_Wait(&directoryMutex2);
+	uint32_t toDeleteIndex = findDuplicateIndex(name);
+	if(toDeleteIndex == -1)
+	{
+		OS_Signal(&directoryMutex2);
+		return 1; //file doesnt exist
+	}
+	Directory[toDeleteIndex].valid = 0;
+	OS_Signal(&directoryMutex2);
+	return 0;
+}
+int StreamToFile=0; // 0=UART, 1=stream to file
 //---------- eFile_RedirectToFile-----------------
 // open a file for writing 
 // Input: file name is a single ASCII letter
 // stream printf data into file
 // Output: 0 if successful and 1 on failure (e.g., trouble read/write to flash)
-int eFile_RedirectToFile(char *name);
+int eFile_RedirectToFile(char *name)
+{
+	 eFile_Create(name); // ignore error if file already exists
+	 if(eFile_WOpen(name)) return 1; // cannot open file
+	 StreamToFile = 1;
+	 return 0;
+}
 
 //---------- eFile_EndRedirectToFile-----------------
 // close the previously open file
 // redirect printf data back to UART
 // Output: 0 if successful and 1 on failure (e.g., wasn't open)
-int eFile_EndRedirectToFile(void);
+int eFile_EndRedirectToFile(void)
+{
+ StreamToFile = 0;
+ if(eFile_WClose()) return 1; // cannot close file
+ return 0;
+}

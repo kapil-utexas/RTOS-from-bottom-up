@@ -2,6 +2,17 @@
 // Middle-level routines to implement a solid-state disk 
 // Jonathan W. Valvano 3/16/11
 
+#include "stdint.h"
+#include "OS.h"
+struct file{ 
+	uint8_t valid;
+	char name [8]; //up to 7 chars + null terminated
+	uint32_t startingBlock; //pointer to next TCB
+	uint32_t size; //size in bytes of data...
+	struct Sema4 * semaphorePt;
+};
+
+
 //---------- eFile_Init-----------------
 // Activate the file system, without formating
 // Input: none
