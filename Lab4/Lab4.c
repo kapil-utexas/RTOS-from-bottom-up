@@ -48,19 +48,19 @@ unsigned long time;      // in 10msec,  0 to 1000
 unsigned long t=0;
   OS_ClearMsTime();    
   DataLost = 0;          // new run with no lost data 
-  printf("Robot running...");
+  //printf("Robot running...");
   eFile_RedirectToFile("Robot");
-  printf("time(sec)\tdata(volts)\n\r");
+  //printf("time(sec)\tdata(volts)\n\r");
   do{
     t++;
     time=OS_MsTime();            // 10ms resolution in this OS
     data = OS_Fifo_Get();        // 1000 Hz sampling get from producer
     voltage = (300*data)/1024;   // in mV
-    printf("%0u.%02u\t%0u.%03u\n\r",time/100,time%100,voltage/1000,voltage%1000);
+    //printf("%0u.%02u\t%0u.%03u\n\r",time/100,time%100,voltage/1000,voltage%1000);
   }
   while(time < 1000);       // change this to mean 10 seconds
   eFile_EndRedirectToFile();
-  printf("done.\n\r");
+  //printf("done.\n\r");
   Running = 0;                // robot no longer running
   OS_Kill();
 }
@@ -195,16 +195,16 @@ int realmain(void){        // lab 5 real main
 unsigned char buffer[512];
 #define MAXBLOCKS 100
 void diskError(char* errtype, unsigned long n){
-  printf(errtype);
-  printf(" disk error %u",n);
+  UART_OutString(errtype);
+  UART_OutUDec(n);
   OS_Kill();
 }
 void TestDisk(void){  DSTATUS result;  unsigned short block;  int i; unsigned long n;
   // simple test of eDisk
-  printf("\n\rEE345M/EE380L, Lab 5 eDisk test\n\r");
+  //printf("\n\rEE345M/EE380L, Lab 5 eDisk test\n\r");
   result = eDisk_Init(0);  // initialize disk
   if(result) diskError("eDisk_Init",result);
-  printf("Writing blocks\n\r");
+  //printf("Writing blocks\n\r");
   n = 1;    // seed
   for(block = 0; block < MAXBLOCKS; block++){
     for(i=0;i<512;i++){
@@ -215,7 +215,7 @@ void TestDisk(void){  DSTATUS result;  unsigned short block;  int i; unsigned lo
     if(eDisk_WriteBlock(buffer,block))diskError("eDisk_WriteBlock",block); // save to disk
     GPIO_PF3 = 0x00;     
   }  
-  printf("Reading blocks\n\r");
+  //printf("Reading blocks\n\r");
   n = 1;  // reseed, start over to get the same sequence
   for(block = 0; block < MAXBLOCKS; block++){
     GPIO_PF2 = 0x04;     // PF2 high for one block read
@@ -224,12 +224,12 @@ void TestDisk(void){  DSTATUS result;  unsigned short block;  int i; unsigned lo
     for(i=0;i<512;i++){
       n = (16807*n)%2147483647; // pseudo random sequence
       if(buffer[i] != (0xFF&n)){
-        printf("Read data not correct, block=%u, i=%u, expected %u, read %u\n\r",block,i,(0xFF&n),buffer[i]);
+        //printf("Read data not correct, block=%u, i=%u, expected %u, read %u\n\r",block,i,(0xFF&n),buffer[i]);
         OS_Kill();
       }      
     }
   }  
-  printf("Successful test of %u blocks\n\r",MAXBLOCKS);
+  //printf("Successful test of %u blocks\n\r",MAXBLOCKS);
   OS_Kill();
 }
 void RunTest(void){
@@ -238,7 +238,7 @@ void RunTest(void){
 //******************* test main1 **********
 // SYSTICK interrupts, period established by OS_Launch
 // Timer interrupts, period established by first call to OS_AddPeriodicThread
-int main(void){   // testmain1
+int main1(void){   // testmain1
   OS_Init();           // initialize, disable interrupts
 
 //*******attach background tasks***********
@@ -255,13 +255,35 @@ int main(void){   // testmain1
 }
 
 void TestFile(void){   int i; char data; 
-  printf("\n\rEE345M/EE380L, Lab 5 eFile test\n\r");
+  UART_OutString("\n\rEE345M/EE380L, Lab 5 eFile test\n\r");
   // simple test of eFile
   if(eFile_Init())              diskError("eFile_Init",0); 
+	UART_OutString("Initialized\n\r");
   if(eFile_Format())            diskError("eFile_Format",0); 
+	UART_OutString("Formatted\n\r");
   eFile_Directory(&UART_OutChar);
   if(eFile_Create("file1"))     diskError("eFile_Create",0);
+	if(eFile_Create("file2"))     diskError("eFile_Create",0);
+	if(eFile_Create("file3"))     diskError("eFile_Create",0);
   if(eFile_WOpen("file1"))      diskError("eFile_WOpen",0);
+  for(i=0;i<2000;i++){
+    if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
+    if(i%52==51){
+      if(eFile_Write('\n'))     diskError("eFile_Write",i);  
+      if(eFile_Write('\r'))     diskError("eFile_Write",i);
+    }
+  }
+  if(eFile_WClose())            diskError("eFile_Close",0);
+  if(eFile_WOpen("file2"))      diskError("eFile_WOpen",0);
+  for(i=0;i<1000;i++){
+    if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
+    if(i%52==51){
+      if(eFile_Write('\n'))     diskError("eFile_Write",i);  
+      if(eFile_Write('\r'))     diskError("eFile_Write",i);
+    }
+  }
+  if(eFile_WClose())            diskError("eFile_Close",0);
+  if(eFile_WOpen("file3"))      diskError("eFile_WOpen",0);
   for(i=0;i<1000;i++){
     if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
     if(i%52==51){
@@ -272,24 +294,40 @@ void TestFile(void){   int i; char data;
   if(eFile_WClose())            diskError("eFile_Close",0);
   eFile_Directory(&UART_OutChar);
   if(eFile_ROpen("file1"))      diskError("eFile_ROpen",0);
+  for(i=0;i<2000;i++){
+    if(eFile_ReadNext(&data))   diskError("eFile_ReadNext",i);
+    UART_OutChar(data);
+  }
+	eFile_RClose();
+	
+  if(eFile_ROpen("file2"))      diskError("eFile_ROpen",0);
   for(i=0;i<1000;i++){
     if(eFile_ReadNext(&data))   diskError("eFile_ReadNext",i);
     UART_OutChar(data);
   }
+	eFile_RClose();
+  if(eFile_ROpen("file3"))      diskError("eFile_ROpen",0);
+  for(i=0;i<1000;i++){
+    if(eFile_ReadNext(&data))   diskError("eFile_ReadNext",i);
+    UART_OutChar(data);
+  }
+	eFile_RClose();
   if(eFile_Delete("file1"))     diskError("eFile_Delete",0);
+	if(eFile_Delete("file2"))     diskError("eFile_Delete",0);
+	if(eFile_Delete("file3"))     diskError("eFile_Delete",0);
   eFile_Directory(&UART_OutChar);
-  printf("Successful test of creating a file\n\r");
+  UART_OutString("Successful test of creating a file\n\r");
   OS_Kill();
 }
 
 //******************* test main2 **********
 // SYSTICK interrupts, period established by OS_Launch
 // Timer interrupts, period established by first call to OS_AddPeriodicThread
-int testmain2(void){ 
+int main(void){ 
   OS_Init();           // initialize, disable interrupts
 
 //*******attach background tasks***********
-  OS_AddPeriodicThread(&disk_timerproc,10*TIME_1MS,0);   // time out routines for disk
+  OS_AddPeriodicThread(&disk_timerproc,20,0);   // time out routines for disk
   
   NumCreated = 0 ;
 // create initial foreground threads

@@ -23,7 +23,7 @@
  */
 #include <stdint.h>
 #include "ADC.h"
-#include "Lab2.h"
+#include "Lab4.h"
 #include "../inc/tm4c123gh6pm.h"
 
 #define NVIC_EN0_INT17          0x00020000  // Interrupt 17 enable

@@ -10,11 +10,9 @@
 #include "../inc/tm4c123gh6pm.h"
 #include "OS.h"
 #include "PLL.h"
-#include "ST7735.h"
 #include "UART.h"
 #include "ADC.h"
 #include "Switch.h"
-#include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
 #define NUMBEROFTHREADS 40
