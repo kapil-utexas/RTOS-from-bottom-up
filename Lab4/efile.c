@@ -571,6 +571,9 @@ int eFile_Delete( char name[])  // remove this file
 		return 1; //file doesnt exist
 	}
 	Directory[toDeleteIndex].valid = 0;
+	uint32_t lastFree = traverseUntilTheEnd(&Directory[0]);
+	appendFirstBlockOfFileToBlock(lastFree, toDeleteIndex);
+	Directory[toDeleteIndex].startingBlock = -1;
 	OS_Signal(&directoryMutex2);
 	return 0;
 }
