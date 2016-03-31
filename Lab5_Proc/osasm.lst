@@ -1,0 +1,110 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;/******************************************************
+                       ***********************/
+    2 00000000         ;/* OSasm.s: low-level OS commands, written in assembly 
+                                             */
+    3 00000000         ;/******************************************************
+                       ***********************/
+    4 00000000         ;Jonathan Valvano/Andreas Gerstlauer, OS Lab 5 solution,
+                        2/28/16
+    5 00000000         
+    6 00000000         
+    7 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+    8 00000000                 THUMB
+    9 00000000                 REQUIRE8
+   10 00000000                 PRESERVE8
+   11 00000000         
+   12 00000000                 EXPORT           OS_Id
+   13 00000000                 EXPORT           OS_Sleep
+   14 00000000                 EXPORT           OS_Kill
+   15 00000000                 EXPORT           OS_Time
+   16 00000000                 EXPORT           OS_AddThread
+   17 00000000         
+   18 00000000         OS_Id
+   19 00000000 DF00            SVC              #0
+   20 00000002 4770            BX               LR
+   21 00000004         
+   22 00000004         OS_Kill
+   23 00000004 DF01            SVC              #1
+   24 00000006 4770            BX               LR
+   25 00000008         
+   26 00000008         OS_Sleep
+   27 00000008 DF02            SVC              #2
+   28 0000000A 4770            BX               LR
+   29 0000000C         
+   30 0000000C         OS_Time
+   31 0000000C DF03            SVC              #3
+   32 0000000E 4770            BX               LR
+   33 00000010         
+   34 00000010         OS_AddThread
+   35 00000010 DF04            SVC              #4
+   36 00000012 4770            BX               LR
+   37 00000014         
+   38 00000014         
+   39 00000014                 ALIGN
+   40 00000014                 END
+Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork//ropi/rwpi --depe
+nd=.\osasm.d -o.\osasm.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include -IC
+:\Keil\ARM\Inc\Luminary --list=.\osasm.lst osasm.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 7 in file osasm.s
+   Uses
+      None
+Comment: .text unused
+OS_AddThread 00000010
+
+Symbol: OS_AddThread
+   Definitions
+      At line 34 in file osasm.s
+   Uses
+      At line 16 in file osasm.s
+Comment: OS_AddThread used once
+OS_Id 00000000
+
+Symbol: OS_Id
+   Definitions
+      At line 18 in file osasm.s
+   Uses
+      At line 12 in file osasm.s
+Comment: OS_Id used once
+OS_Kill 00000004
+
+Symbol: OS_Kill
+   Definitions
+      At line 22 in file osasm.s
+   Uses
+      At line 14 in file osasm.s
+Comment: OS_Kill used once
+OS_Sleep 00000008
+
+Symbol: OS_Sleep
+   Definitions
+      At line 26 in file osasm.s
+   Uses
+      At line 13 in file osasm.s
+Comment: OS_Sleep used once
+OS_Time 0000000C
+
+Symbol: OS_Time
+   Definitions
+      At line 30 in file osasm.s
+   Uses
+      At line 15 in file osasm.s
+Comment: OS_Time used once
+6 symbols
+336 symbols in table

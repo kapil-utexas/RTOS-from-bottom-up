@@ -1,0 +1,306 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ; <<< Use Configuration Wizard in Context Menu >>>
+    2 00000000         ;*******************************************************
+                       ***********************
+    3 00000000         ;
+    4 00000000         ; startup_rvmdk.S - Startup code for use with Keil's uVi
+                       sion.
+    5 00000000         ;
+    6 00000000         ; Copyright (c) 2012 Texas Instruments Incorporated.  Al
+                       l rights reserved.
+    7 00000000         ; Software License Agreement
+    8 00000000         ; 
+    9 00000000         ; Texas Instruments (TI) is supplying this software for 
+                       use solely and
+   10 00000000         ; exclusively on TI's microcontroller products. The soft
+                       ware is owned by
+   11 00000000         ; TI and/or its suppliers, and is protected under applic
+                       able copyright
+   12 00000000         ; laws. You may not combine this software with "viral" o
+                       pen-source
+   13 00000000         ; software in order to form a larger program.
+   14 00000000         ; 
+   15 00000000         ; THIS SOFTWARE IS PROVIDED "AS IS" AND WITH ALL FAULTS.
+                       
+   16 00000000         ; NO WARRANTIES, WHETHER EXPRESS, IMPLIED OR STATUTORY, 
+                       INCLUDING, BUT
+   17 00000000         ; NOT LIMITED TO, IMPLIED WARRANTIES OF MERCHANTABILITY 
+                       AND FITNESS FOR
+   18 00000000         ; A PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. TI SHALL 
+                       NOT, UNDER ANY
+   19 00000000         ; CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL, OR C
+                       ONSEQUENTIAL
+   20 00000000         ; DAMAGES, FOR ANY REASON WHATSOEVER.
+   21 00000000         ; 
+   22 00000000         ; This is part of revision 9453 of the EK-LM4F120XL Firm
+                       ware Package.
+   23 00000000         ;
+   24 00000000         ;*******************************************************
+                       ***********************
+   25 00000000         ; Edited to conform with ISR names as described in 
+   26 00000000         ;   "Embedded Systems: Introduction to ARM Cortex M Micr
+                       ocontrollers",
+   27 00000000         ;   ISBN: 978-1469998749, Jonathan Valvano, copyright (c
+                       ) 2012
+   28 00000000         ;   "Embedded Systems: Real Time Interfacing to ARM Cort
+                       ex M Microcontrollers",
+   29 00000000         ;   ISBN: 978-1463590154, Jonathan Valvano, copyright (c
+                       ) 2012
+   30 00000000         ;   "Embedded Systems: Real-Time Operating Systems for A
+                       RM Cortex M Microcontrollers",
+   31 00000000         ;   ISBN: 978-1466468863, Jonathan Valvano, copyright (c
+                       ) 2013
+   32 00000000         ;
+   33 00000000         ;*******************************************************
+                       ***********************
+   34 00000000         ;
+   35 00000000         ; We do not use virtual memory, so this code does not pr
+                       ovide its own stack or
+   36 00000000         ; heap, both of which need to be provided by the environ
+                       ment , i.e. the OS
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   37 00000000         ; launching this process.
+   38 00000000         ;
+   39 00000000         ;*******************************************************
+                       ***********************
+   40 00000000         
+   41 00000000         ;*******************************************************
+                       ***********************
+   42 00000000         ;
+   43 00000000         ; Indicate that the code in this file preserves 8-byte a
+                       lignment of the stack.
+   44 00000000         ;
+   45 00000000         ;*******************************************************
+                       ***********************
+   46 00000000                 PRESERVE8
+   47 00000000         
+   48 00000000         ;*******************************************************
+                       ***********************
+   49 00000000         ;
+   50 00000000         ; Place code into the reset code section.
+   51 00000000         ;
+   52 00000000         ;*******************************************************
+                       ***********************
+   53 00000000                 AREA             RESET, CODE, READONLY
+   54 00000000                 THUMB
+   55 00000000         
+   56 00000000         ;*******************************************************
+                       ***********************
+   57 00000000         ;
+   58 00000000         ; No vector table.
+   59 00000000         ;
+   60 00000000         ;*******************************************************
+                       ***********************
+   61 00000000                 EXPORT           __Vectors
+   62 00000000         __Vectors
+   63 00000000         
+   64 00000000         
+   65 00000000         
+   66 00000000         ;*******************************************************
+                       ***********************
+   67 00000000         ;
+   68 00000000         ; This is the code that gets called when the processor f
+                       irst starts execution
+   69 00000000         ; following a reset event.
+   70 00000000         ;
+   71 00000000         ;*******************************************************
+                       ***********************
+   72 00000000                 EXPORT           Reset_Handler
+   73 00000000         Reset_Handler
+   74 00000000         ;
+   75 00000000         ; Enable the floating-point unit.  This must be done her
+                       e to handle the
+   76 00000000         ; case where main() uses floating-point and the function
+                        prologue saves
+   77 00000000         ; floating-point registers (which will fault if floating
+                       -point is not
+   78 00000000         ; enabled).  Any configuration of the floating-point uni
+                       t using
+   79 00000000         ; DriverLib APIs must be done here prior to the floating
+                       -point unit
+
+
+
+ARM Macro Assembler    Page 3 
+
+
+   80 00000000         ; being enabled.
+   81 00000000         ;
+   82 00000000         ; Note that this does not use DriverLib since it might n
+                       ot be included
+   83 00000000         ; in this project.
+   84 00000000         ;
+   85 00000000         ;        MOVW    R0, #0xED88
+   86 00000000         ;        MOVT    R0, #0xE000
+   87 00000000         ;        LDR     R1, [R0]
+   88 00000000         ;        ORR     R1, #0x00F00000
+   89 00000000         ;        STR     R1, [R0]
+   90 00000000         
+   91 00000000         ;
+   92 00000000         ; Call the C library enty point that handles startup.  T
+                       his will copy
+   93 00000000         ; the .data section initializers from flash to SRAM and 
+                       zero fill the
+   94 00000000         ; .bss section.
+   95 00000000         ;
+   96 00000000                 IMPORT           __main
+   97 00000000 F7FF BFFE       B                __main
+   98 00000004         
+   99 00000004         ;*******************************************************
+                       ***********************
+  100 00000004         ;
+  101 00000004         ; Make sure the end of this section is aligned.
+  102 00000004         ;
+  103 00000004         ;*******************************************************
+                       ***********************
+  104 00000004                 ALIGN
+  105 00000004         
+  106 00000004         
+  107 00000004         ;*******************************************************
+                       ***********************
+  108 00000004         ;
+  109 00000004         ; Some code in the normal code section for initializing 
+                       the process.
+  110 00000004         ;
+  111 00000004         ;*******************************************************
+                       ***********************
+  112 00000004                 AREA             |.text|, CODE, READONLY
+  113 00000000         
+  114 00000000         ;*******************************************************
+                       ***********************
+  115 00000000         ;
+  116 00000000         ; The function expected of the C library startup code fo
+                       r defining the stack
+  117 00000000         ; and heap memory locations.  For the C library version 
+                       of the startup code,
+  118 00000000         ; provide this function so that the C library initializa
+                       tion code can find out
+  119 00000000         ; the location of the stack and heap.
+  120 00000000         ;
+  121 00000000         ;*******************************************************
+                       ***********************
+  122 00000000                 IF               :DEF: __MICROLIB
+  127 00000000                 IMPORT           __use_two_region_memory
+  128 00000000                 EXPORT           __user_initial_stackheap
+  129 00000000         __user_initial_stackheap
+
+
+
+ARM Macro Assembler    Page 4 
+
+
+  130 00000000 4608            MOV              R0, R1      ; no heap, inherit 
+                                                            stack from environm
+                                                            ent
+  131 00000002 460A            MOV              R2, R1
+  132 00000004 4770            BX               LR
+  133 00000006                 ENDIF
+  134 00000006         
+  135 00000006         ;*******************************************************
+                       ***********************
+  136 00000006         ;
+  137 00000006         ; Make sure the end of this section is aligned.
+  138 00000006         ;
+  139 00000006         ;*******************************************************
+                       ***********************
+  140 00000006 00 00           ALIGN
+  141 00000008         
+  142 00000008         ;*******************************************************
+                       ***********************
+  143 00000008         ;
+  144 00000008         ; Tell the assembler that we're done.
+  145 00000008         ;
+  146 00000008         ;*******************************************************
+                       ***********************
+  147 00000008                 END
+Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork//ropi/rwpi --depe
+nd=.\startup.d -o.\startup.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include
+ -IC:\Keil\ARM\Inc\Luminary --list=.\startup.lst startup.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+RESET 00000000
+
+Symbol: RESET
+   Definitions
+      At line 53 in file startup.s
+   Uses
+      None
+Comment: RESET unused
+Reset_Handler 00000000
+
+Symbol: Reset_Handler
+   Definitions
+      At line 73 in file startup.s
+   Uses
+      At line 72 in file startup.s
+Comment: Reset_Handler used once
+__Vectors 00000000
+
+Symbol: __Vectors
+   Definitions
+      At line 62 in file startup.s
+   Uses
+      At line 61 in file startup.s
+Comment: __Vectors used once
+3 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 112 in file startup.s
+   Uses
+      None
+Comment: .text unused
+__user_initial_stackheap 00000000
+
+Symbol: __user_initial_stackheap
+   Definitions
+      At line 129 in file startup.s
+   Uses
+      At line 128 in file startup.s
+Comment: __user_initial_stackheap used once
+2 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+External symbols
+
+__main 00000000
+
+Symbol: __main
+   Definitions
+      At line 96 in file startup.s
+   Uses
+      At line 97 in file startup.s
+Comment: __main used once
+__use_two_region_memory 00000000
+
+Symbol: __use_two_region_memory
+   Definitions
+      At line 127 in file startup.s
+   Uses
+      None
+Comment: __use_two_region_memory unused
+2 symbols
+339 symbols in table

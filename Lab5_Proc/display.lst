@@ -1,0 +1,88 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ;/******************************************************
+                       ***********************/
+    2 00000000         ;/* Display.s: Display interface, written in assembly   
+                                             */
+    3 00000000         ;/******************************************************
+                       ***********************/
+    4 00000000         ;Jonathan Valvano/Andreas Gerstlauer, OS Lab 5 solution,
+                        2/28/16
+    5 00000000         
+    6 00000000         
+    7 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+    8 00000000                 THUMB
+    9 00000000                 REQUIRE8
+   10 00000000                 PRESERVE8
+   11 00000000         
+   12 00000000                 EXPORT           Display_Message
+   13 00000000         
+   14 00000000         ; Declare the external OS kernel symbol for either stati
+                       c or dynamic linking:
+   15 00000000         ; For dynamic linking, OS symbols must be IMPORTed throu
+                       gh entries in a linker
+   16 00000000         ;   steering file provided via an -edit command line opt
+                       ion to the ARM Linker.
+   17 00000000         ; For static linking, a file with OS symbol definitions,
+                        generated via the
+   18 00000000         ;   --symdefs Linker command line option when compiling 
+                       the OS, must be provided. 
+   19 00000000                 EXTERN           ST7735_Message [DYNAMIC]
+   20 00000000         
+   21 00000000         ; Force a long call across RAM->ROM boundaries to suppor
+                       t relocation into RAM
+   22 00000000         Display_Message
+   23 00000000 F8DF C004       LDR              R12,=ST7735_Message
+   24 00000004 4760            BX               R12
+   25 00000006         
+   26 00000006         
+   27 00000006 00 00           ALIGN
+   28 00000008                 END
+              00000000 
+Command Line: --debug --xref --cpu=Cortex-M4 --apcs=interwork//ropi/rwpi --depe
+nd=.\display.d -o.\display.o -IC:\Keil\ARM\RV31\INC -IC:\Keil\ARM\CMSIS\Include
+ -IC:\Keil\ARM\Inc\Luminary --list=.\display.lst Display.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 7 in file Display.s
+   Uses
+      None
+Comment: .text unused
+Display_Message 00000000
+
+Symbol: Display_Message
+   Definitions
+      At line 22 in file Display.s
+   Uses
+      At line 12 in file Display.s
+Comment: Display_Message used once
+2 symbols
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+External symbols
+
+ST7735_Message 00000000
+
+Symbol: ST7735_Message
+   Definitions
+      At line 19 in file Display.s
+   Uses
+      At line 23 in file Display.s
+Comment: ST7735_Message used once
+1 symbol
+335 symbols in table

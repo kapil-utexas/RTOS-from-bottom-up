@@ -1,0 +1,1 @@
+.\display.o: Display.s

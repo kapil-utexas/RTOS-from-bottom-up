@@ -1,0 +1,9 @@
+--cpu Cortex-M4
+".\startup.o"
+".\proc.o"
+".\osasm.o"
+".\display.o"
+--ro-base 0x00000000 --entry 0x00000000 --rw-base 0x20000000 --entry Reset_Handler --first __Vectors --ropi --rwpi --strict
+--split --edit=import.stf --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Proc.map" -o .\Proc.axf

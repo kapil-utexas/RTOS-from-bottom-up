@@ -1,0 +1,1 @@
+.\osasm.o: osasm.s
