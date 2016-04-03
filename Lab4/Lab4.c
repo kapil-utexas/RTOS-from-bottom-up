@@ -268,28 +268,28 @@ void TestFile(void){   int i; char data;
   if(eFile_WOpen("file1"))      diskError("eFile_WOpen",0);
   for(i=0;i<2000;i++){
     if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
-    if(i%52==51){
-      if(eFile_Write('\n'))     diskError("eFile_Write",i);  
-      if(eFile_Write('\r'))     diskError("eFile_Write",i);
-    }
+    //if(i%52==51){
+    //  if(eFile_Write('\n'))     diskError("eFile_Write",i);  
+    //  if(eFile_Write('\r'))     diskError("eFile_Write",i);
+    //}
   }
   if(eFile_WClose())            diskError("eFile_Close",0);
   if(eFile_WOpen("file2"))      diskError("eFile_WOpen",0);
   for(i=0;i<1000;i++){
     if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
-    if(i%52==51){
-      if(eFile_Write('\n'))     diskError("eFile_Write",i);  
-      if(eFile_Write('\r'))     diskError("eFile_Write",i);
-    }
+    //if(i%52==51){
+    //  if(eFile_Write('\n'))     diskError("eFile_Write",i);  
+    //  if(eFile_Write('\r'))     diskError("eFile_Write",i);
+    //}
   }
   if(eFile_WClose())            diskError("eFile_Close",0);
   if(eFile_WOpen("file3"))      diskError("eFile_WOpen",0);
   for(i=0;i<1000;i++){
     if(eFile_Write('a'+i%26))   diskError("eFile_Write",i);
-    if(i%52==51){
-      if(eFile_Write('\n'))     diskError("eFile_Write",i);  
-      if(eFile_Write('\r'))     diskError("eFile_Write",i);
-    }
+    //if(i%52==51){
+    //  if(eFile_Write('\n'))     diskError("eFile_Write",i);  
+    //  if(eFile_Write('\r'))     diskError("eFile_Write",i);
+    //}
   }
   if(eFile_WClose())            diskError("eFile_Close",0);
   eFile_Directory(&UART_OutChar);
@@ -298,6 +298,12 @@ void TestFile(void){   int i; char data;
     if(eFile_ReadNext(&data))   diskError("eFile_ReadNext",i);
     UART_OutChar(data);
   }
+  if(eFile_ROpen("file1"))      diskError("eFile_ROpen",25);
+  for(i=0;i<2000;i++){
+    if(eFile_ReadNext(&data))   diskError("eFile_ReadNext",i);
+    UART_OutChar(data);
+  }
+	
 	eFile_RClose();
 	
   if(eFile_ROpen("file2"))      diskError("eFile_ROpen",0);

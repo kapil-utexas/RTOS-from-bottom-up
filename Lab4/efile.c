@@ -13,7 +13,7 @@
 #define FIRSTDATAINDEX 6
 #define LASTDATAINDEX 511
 struct file Directory [MAXNUMBEROFFILES];
-
+extern struct TCB * RunPt;
 void readDirectoryFromDisk(void);
 void updateDirectoryToDisk(void);
 struct Sema4 semaphorePool[MAXNUMBEROFFILES]; 
@@ -23,6 +23,7 @@ struct Sema4 readerMutex3;
 struct Sema4 directoryMutex2;
 struct Sema4 fileMutex1; //global file mutex... only one file open at a time
 unsigned char buff[512];
+uint32_t threadIdOpened;
 unsigned char buff1[512];
 unsigned char buff2[512];
 unsigned char buff3[512];
@@ -38,6 +39,7 @@ unsigned char buff5[512];
 int eFile_Init(void) // initialize file system
 {
 	uint32_t status;
+	threadIdOpened = -1;
 	if(eDisk_Status(0) == 0) //if already initialized
 	{
 		return 1;
@@ -345,7 +347,7 @@ int eFile_Create( char name[])  // create new file, make it empty
 
 //will handle the global file opened
 //if -1, no files are open
-uint32_t fileOpenIndex;
+uint32_t fileOpenIndex = -1;
 unsigned char openedFileBuffer[512];
 uint32_t lastOpenedBlock;
 //---------- eFile_WOpen-----------------
@@ -358,13 +360,14 @@ int eFile_WOpen(char name[])      // open a file for writing
 	OS_Wait(&directoryMutex2);
 	uint32_t fileIndex = findDuplicateIndex(name);
 	OS_Signal(&directoryMutex2);
-	if(fileIndex != -1) //file exists
+	if(fileIndex != -1 && threadIdOpened != RunPt->id) //file exists
 	{
 		fileOpenIndex = fileIndex;
 		//read last block into openedFileBuffer
 		uint32_t lastBlock = traverseUntilTheEnd(&Directory[fileOpenIndex]);
 		eDisk_ReadBlock(openedFileBuffer,lastBlock);
 		lastOpenedBlock = lastBlock;
+		threadIdOpened = RunPt->id;
 		return 0;
 	}
 	return 1;
@@ -384,6 +387,7 @@ int eFile_WClose(void) // close the file for writing
 	updateDirectoryToDisk();
 	fileOpenIndex = -1;
 	lastOpenedBlock = -1;
+	threadIdOpened = -1;
 	OS_Signal(&fileMutex1);
 	return 0;
 }
@@ -443,12 +447,13 @@ int eFile_ROpen( char name[])      // open a file for reading
 	OS_Wait(&directoryMutex2);
 	uint32_t fileIndex = findDuplicateIndex(name);
 	OS_Signal(&directoryMutex2);
-	if(fileIndex != -1) //file exists
+	if(fileIndex != -1 && threadIdOpened != RunPt->id) //file exists
 	{
 		fileOpenIndex = fileIndex;
 		//read last block into openedFileBuffer
 		eDisk_ReadBlock(openedFileBuffer,Directory[fileOpenIndex].startingBlock);
 		lastOpenedBlock = Directory[fileOpenIndex].startingBlock;
+		threadIdOpened = RunPt->id;
 		OS_Signal(&readerMutex3);
 		return 0; //file exists!
 	}
@@ -473,6 +478,7 @@ int eFile_RClose(void) // close the file for writing
 	{
 		fileOpenIndex = -1;
 		lastOpenedBlock = -1;
+		threadIdOpened = -1;
 		nextByteToReadIndex = FIRSTDATAINDEX;
 		OS_Signal(&fileMutex1);
 	}
@@ -528,6 +534,9 @@ int eFile_Directory(void(*fp)(unsigned char))
 	{
 		if(Directory[i].valid == 1)
 		{
+			UART_OutChar(CR);
+			UART_OutChar(LF);
+
 			filesPrinted++;
 			for(int j = 0; j<8; j++)
 			{
@@ -545,6 +554,8 @@ int eFile_Directory(void(*fp)(unsigned char))
 	}
 	if(filesPrinted == 0)
 	{
+		UART_OutChar(CR);
+		UART_OutChar(LF);
 		fp('E');
 		fp('M');
 		fp('P');
