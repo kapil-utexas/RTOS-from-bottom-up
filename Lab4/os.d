@@ -3,8 +3,6 @@
 .\os.o: ../inc/tm4c123gh6pm.h
 .\os.o: OS.h
 .\os.o: PLL.h
-.\os.o: ST7735.h
 .\os.o: UART.h
 .\os.o: ADC.h
 .\os.o: Switch.h
-.\os.o: Lab2.h

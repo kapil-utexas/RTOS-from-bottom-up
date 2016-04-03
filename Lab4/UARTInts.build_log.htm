@@ -4,7 +4,7 @@
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
 C:\445M\Lab4\UARTInts.uvproj
-Project File Date:  03/21/2016
+Project File Date:  04/03/2016
 
 <h2>Output:</h2>
 Rebuild target 'UARTInts'
@@ -12,87 +12,86 @@ compiling PLL.c...
 compiling OS.c...
 assembling startup.s...
 compiling Switch.c...
-compiling ST7735.c...
 compiling UART.c...
 assembling OSasm.s...
 compiling Lab4.c...
-Lab4.c(177): warning:  #167-D: argument of type "void (*)(unsigned short)" is incompatible with parameter of type "void (*)(unsigned long)"
+Lab4.c(46): warning:  #550-D: variable "voltage" was set but never used
+  unsigned long voltage;   // in mV,      0 to 3000
+Lab4.c(158): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
+                                eFile_Directory(&UART_OutChar);
+Lab4.c(136): warning:  #177-D: variable "adcVoltage" was declared but never referenced
+        uint32_t adcVoltage;
+Lab4.c(197): warning:  #167-D: argument of type "void (*)(unsigned short)" is incompatible with parameter of type "void (*)(unsigned long)"
     ADC_Collect(0, 1000, &Producer); // start ADC sampling, channel 0, 1000 Hz
-Lab4.c(262): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
-    eFile_Directory(&UART_OutChar);
-Lab4.c(273): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
-    eFile_Directory(&UART_OutChar);
 Lab4.c(280): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
     eFile_Directory(&UART_OutChar);
-Lab4.c: 4 warnings, 0 errors
+Lab4.c(311): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
+    eFile_Directory(&UART_OutChar);
+Lab4.c(340): warning:  #167-D: argument of type "void (*)(char)" is incompatible with parameter of type "void (*)(unsigned char)"
+    eFile_Directory(&UART_OutChar);
+Lab4.c: 7 warnings, 0 errors
 compiling edisk.c...
 compiling ADC.c...
+compiling efile.c...
+efile.c(42): warning:  #68-D: integer conversion resulted in a change of sign
+        threadIdOpened = -1;
+efile.c(78): warning:  #223-D: function "StartCritical" declared implicitly
+                status = StartCritical();
+efile.c(102): warning:  #223-D: function "EndCritical" declared implicitly
+                EndCritical(status);
+efile.c(108): warning:  #223-D: function "StartCritical" declared implicitly
+                status = StartCritical();
+efile.c(131): warning:  #223-D: function "EndCritical" declared implicitly
+                EndCritical(status);
+efile.c(206): warning:  #68-D: integer conversion resulted in a change of sign
+                while(nextBlockNumber != -1)
+efile.c(251): warning:  #68-D: integer conversion resulted in a change of sign
+                        appendBlock(temp, -1); //point it to null
+efile.c(277): warning:  #68-D: integer conversion resulted in a change of sign
+                appendBlock(NUMBEROFBLOCKS -1, -1);
+efile.c(265): warning:  #177-D: variable "lastFreeBlockNumber" was declared but never referenced
+                uint32_t lastFreeBlockNumber;
+efile.c(289): warning:  #68-D: integer conversion resulted in a change of sign
+                appendBlock(NUMBEROFBLOCKS -1, -1);
+efile.c(310): warning:  #68-D: integer conversion resulted in a change of sign
+        return -1; //no duplicate
+efile.c(326): warning:  #68-D: integer conversion resulted in a change of sign
+                        if(findDuplicateIndex(name) != -1)
+efile.c(350): warning:  #68-D: integer conversion resulted in a change of sign
+  uint32_t fileOpenIndex = -1;
+efile.c(363): warning:  #68-D: integer conversion resulted in a change of sign
+        if(fileIndex != -1 && threadIdOpened != RunPt->id) //file exists
+efile.c(382): warning:  #68-D: integer conversion resulted in a change of sign
+        if(fileOpenIndex == -1)
+efile.c(388): warning:  #68-D: integer conversion resulted in a change of sign
+        fileOpenIndex = -1;
+efile.c(389): warning:  #68-D: integer conversion resulted in a change of sign
+        lastOpenedBlock = -1;
+efile.c(390): warning:  #68-D: integer conversion resulted in a change of sign
+        threadIdOpened = -1;
+efile.c(450): warning:  #68-D: integer conversion resulted in a change of sign
+        if(fileIndex != -1 && threadIdOpened != RunPt->id) //file exists
+efile.c(471): warning:  #68-D: integer conversion resulted in a change of sign
+        if(fileOpenIndex == -1)
+efile.c(479): warning:  #68-D: integer conversion resulted in a change of sign
+                fileOpenIndex = -1;
+efile.c(480): warning:  #68-D: integer conversion resulted in a change of sign
+                lastOpenedBlock = -1;
+efile.c(481): warning:  #68-D: integer conversion resulted in a change of sign
+                threadIdOpened = -1;
+efile.c(579): warning:  #68-D: integer conversion resulted in a change of sign
+        if(toDeleteIndex == -1)
+efile.c(587): warning:  #68-D: integer conversion resulted in a change of sign
+        Directory[toDeleteIndex].startingBlock = -1;
+efile.c: 25 warnings, 0 errors
 linking...
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Create (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Delete (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Directory (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_EndRedirectToFile (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Format (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Init (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_ROpen (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_ReadNext (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_RedirectToFile (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_WClose (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_WOpen (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Write (referred from lab4.o).
-Not enough information to list image symbols.
-Finished: 1 information, 0 warning and 12 error messages.
-".\UARTInts.axf" - 12 Error(s), 4 Warning(s).
-Target not created
+Program Size: Code=9804 RO-data=32 RW-data=348 ZI-data=28212  
+".\UARTInts.axf" - 0 Error(s), 32 Warning(s).
+Load "C:\\445M\\Lab4\\UARTInts.axf" 
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
+Verify OK.
 </pre>
 </body>
 </html>
-
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_WOpen (referred from lab4.o).
-.\UARTInts.axf: Error: L6218E: Undefined symbol eFile_Write (referred from lab4.o).
-Not enough information to list image symbols.
-Finished: 1 information, 0 warning and 12 error messages.
-".\UARTInts.axf" - 12 Error(s), 7 Warning(s).
-Target not created
-), 6 Warning(s).
-Target not created
-\UARTInts.axf" - 15 Error(s), 6 Warning(s).
-Target not created
-           // enable weak pullup on PA2,3,4,5
-edisk.c(71): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_DEN_R |= 0x3C;             // enable digital I/O on PA2,3,4,5
-edisk.c(73): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_DIR_R |= 0xC8;             // PA7,PA6,PA3 output (CS to LCD)
-edisk.c(74): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_DATA_R |= 0x88;            // PA7,PA3 high (disable LCD)
-edisk.c(76): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_DR4R_R |= 0xEC;            // 4mA output on outputs
-edisk.c(77): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFF0000FF)+0x00222200;
-edisk.c(77): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFF0000FF)+0x00222200;
-edisk.c(78): error:  #20: identifier "uint32_t" is undefined
-    GPIO_PORTA_AMSEL_R = 0;               // disable analog functionality on PA
-edisk.c(79): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR1_R &= ~SSI_CR1_SSE;           // disable SSI
-edisk.c(80): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR1_R &= ~SSI_CR1_MS;            // master mode
-edisk.c(82): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CPSR_R = (SSI0_CPSR_R&~SSI_CPSR_CPSDVSR_M)+CPSDVSR; 
-edisk.c(82): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CPSR_R = (SSI0_CPSR_R&~SSI_CPSR_CPSDVSR_M)+CPSDVSR; 
-edisk.c(85): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR0_R &= ~(SSI_CR0_SCR_M |       // SCR = 0 (80 Mbps base clock)
-edisk.c(89): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR0_R = (SSI0_CR0_R&~SSI_CR0_FRF_M)+SSI_CR0_FRF_MOTO;
-edisk.c(89): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR0_R = (SSI0_CR0_R&~SSI_CR0_FRF_M)+SSI_CR0_FRF_MOTO;
-edisk.c(91): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR0_R = (SSI0_CR0_R&~SSI_CR0_DSS_M)+SSI_CR0_DSS_8;
-edisk.c(91): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR0_R = (SSI0_CR0_R&~SSI_CR0_DSS_M)+SSI_CR0_DSS_8;
-edisk.c(92): error:  #20: identifier "uint32_t" is undefined
-    SSI0_CR1_R |= SSI_CR1_SSE;            // enable SSI
-edisk.c: 0 warnings, 30 errors
-".\UARTInts.axf" - 30 Error(s), 6 Warning(s).
-Target not created

@@ -9,3 +9,4 @@
 .\lab4.o: OS.h
 .\lab4.o: edisk.h
 .\lab4.o: efile.h
+.\lab4.o: OS.h
