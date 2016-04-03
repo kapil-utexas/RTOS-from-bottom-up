@@ -1,43 +1,74 @@
 Dependencies for Project 'UARTInts', Target 'UARTInts': (DO NOT MODIFY !)
-F (.\PLL.c)(0x56BABD97)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\pll.o --omf_browse .\pll.crf --depend .\pll.d)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (PLL.h)(0x56BABD97)
-I (../inc/tm4c123gh6pm.h)(0x56BABD98)
-F (.\OS.c)(0x56FD5FCF)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\os.o --omf_browse .\os.crf --depend .\os.d)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (../inc/tm4c123gh6pm.h)(0x56BABD98)
-I (OS.h)(0x56F0BB6F)
-I (PLL.h)(0x56BABD97)
-I (ST7735.h)(0x56BAE401)
-I (UART.h)(0x56BABD97)
-I (ADC.h)(0x56CEB18A)
-I (Switch.h)(0x56F0BB6F)
-I (Lab2.h)(0x56CED69F)
-F (.\Lab2.c)(0x56FD66E2)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\lab2.o --omf_browse .\lab2.crf --depend .\lab2.d)
-I (OS.h)(0x56F0BB6F)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (..\inc/tm4c123gh6pm.h)(0x56BABD98)
-I (ST7735.h)(0x56BAE401)
-I (ADC.h)(0x56CEB18A)
-I (UART.h)(0x56BABD97)
-I (C:\Keil\ARM\ARMCC\include\string.h)(0x51C88A34)
-F (.\startup.s)(0x56BAE2FC)(--cpu Cortex-M4 -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\startup.lst --xref -o .\startup.o --depend .\startup.d)
-F (.\OSasm.s)(0x56FD609B)(--cpu Cortex-M4 -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\osasm.lst --xref -o .\osasm.o --depend .\osasm.d)
-F (.\ST7735.c)(0x56D52E03)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\st7735.o --omf_browse .\st7735.crf --depend .\st7735.d)
-I (C:\Keil\ARM\ARMCC\include\stdio.h)(0x51C88A34)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (ST7735.h)(0x56BAE401)
-I (../inc/tm4c123gh6pm.h)(0x56BABD98)
-I (OS.h)(0x56F0BB6F)
-F (.\Switch.c)(0x56F0BB6F)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\switch.o --omf_browse .\switch.crf --depend .\switch.d)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (../inc/tm4c123gh6pm.h)(0x56BABD98)
-I (Switch.h)(0x56F0BB6F)
-I (OS.h)(0x56F0BB6F)
-F (.\UART.c)(0x56F0BB6F)(-c --cpu Cortex-M4 -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\uart.o --omf_browse .\uart.crf --depend .\uart.d)
-I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C88A34)
-I (../inc/tm4c123gh6pm.h)(0x56BABD98)
-I (FIFO.h)(0x56BABD97)
-I (UART.h)(0x56BABD97)
-I (OS.h)(0x56F0BB6F)
-F (.\cr4_fft_64_stm32.s)(0x56CEB232)(--cpu Cortex-M4 -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\cr4_fft_64_stm32.lst --xref -o .\cr4_fft_64_stm32.o --depend .\cr4_fft_64_stm32.d)
+F (.\PLL.c)(0x56FD6C76)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\pll.o --omf_browse .\pll.crf --depend .\pll.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (PLL.h)(0x56FD6C76)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+F (.\OS.c)(0x56FF0EBD)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\os.o --omf_browse .\os.crf --depend .\os.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+I (OS.h)(0x56FEF31C)
+I (PLL.h)(0x56FD6C76)
+I (ST7735.h)(0x56FD6C76)
+I (UART.h)(0x56FD6C76)
+I (heap.h)(0x56B5280D)
+I (ADC.h)(0x56FD6C76)
+I (Switch.h)(0x56FD6C76)
+I (Lab2.h)(0x56FD6C76)
+F (.\Lab2.c)(0x56FF01B0)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\lab2.o --omf_browse .\lab2.crf --depend .\lab2.d)
+I (OS.h)(0x56FEF31C)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (..\inc/tm4c123gh6pm.h)(0x56B52816)
+I (ST7735.h)(0x56FD6C76)
+I (loader.h)(0x56FEE680)
+I (ADC.h)(0x56FD6C76)
+I (UART.h)(0x56FD6C76)
+I (C:\Keil\ARM\ARMCC\include\string.h)(0x51C8A654)
+F (.\startup.s)(0x56FD6C77)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\startup.lst --xref -o .\startup.o --depend .\startup.d)
+F (.\OSasm.s)(0x56FF0FF0)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\osasm.lst --xref -o .\osasm.o --depend .\osasm.d)
+F (.\ST7735.c)(0x56FD6C76)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\st7735.o --omf_browse .\st7735.crf --depend .\st7735.d)
+I (C:\Keil\ARM\ARMCC\include\stdio.h)(0x51C8A654)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (ST7735.h)(0x56FD6C76)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+I (OS.h)(0x56FEF31C)
+F (.\Switch.c)(0x56FD6C76)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\switch.o --omf_browse .\switch.crf --depend .\switch.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+I (Switch.h)(0x56FD6C76)
+I (OS.h)(0x56FEF31C)
+F (.\UART.c)(0x56FEFFB4)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\uart.o --omf_browse .\uart.crf --depend .\uart.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+I (FIFO.h)(0x56FD6C76)
+I (UART.h)(0x56FD6C76)
+I (OS.h)(0x56FEF31C)
+F (.\cr4_fft_64_stm32.s)(0x56FD6C77)(--cpu Cortex-M4 --pd "__EVAL SETA 1" -g --apcs=interwork -I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary--list .\cr4_fft_64_stm32.lst --xref -o .\cr4_fft_64_stm32.o --depend .\cr4_fft_64_stm32.d)
+F (.\diskio.c)(0x56B52811)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\diskio.o --omf_browse .\diskio.crf --depend .\diskio.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (../inc/tm4c123gh6pm.h)(0x56B52816)
+I (integer.h)(0x56B52811)
+I (diskio.h)(0x56B52811)
+F (.\ff.c)(0x56B52811)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\ff.o --omf_browse .\ff.crf --depend .\ff.d)
+I (ff.h)(0x56B52811)
+I (integer.h)(0x56B52811)
+I (ffconf.h)(0x56B52811)
+I (diskio.h)(0x56B52811)
+F (.\heap.c)(0x56B5280D)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\heap.o --omf_browse .\heap.crf --depend .\heap.d)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (heap.h)(0x56B5280D)
+F (.\loader.c)(0x56FEE680)(-c --cpu Cortex-M4 -D__EVAL -g -O0 --apcs=interwork --split_sections --signed_chars -I.. -I..\..\.. --C99-I C:\Keil\ARM\RV31\INC-I C:\Keil\ARM\CMSIS\Include-I C:\Keil\ARM\Inc\Luminary-Drvmdk -DPART_LM4F120H5QR-o .\loader.o --omf_browse .\loader.crf --depend .\loader.d)
+I (loader.h)(0x56FEE680)
+I (elf.h)(0x56FEE680)
+I (C:\Keil\ARM\ARMCC\include\stdint.h)(0x51C8A654)
+I (app/sysent.h)(0x56FEE680)
+I (C:\Keil\ARM\ARMCC\include\stddef.h)(0x51C8A654)
+I (loader_config.h)(0x56FEED69)
+I (C:\Keil\ARM\ARMCC\include\stdio.h)(0x51C8A654)
+I (C:\Keil\ARM\ARMCC\include\stdlib.h)(0x51C8A654)
+I (C:\Keil\ARM\ARMCC\include\string.h)(0x51C8A654)
+I (ff.h)(0x56B52811)
+I (integer.h)(0x56B52811)
+I (ffconf.h)(0x56B52811)
+I (heap.h)(0x56B5280D)
+I (UART.h)(0x56FD6C76)
+I (os.h)(0x56FEF31C)

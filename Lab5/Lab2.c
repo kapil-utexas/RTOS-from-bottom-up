@@ -25,6 +25,7 @@
 #include "OS.h"
 #include "inc/tm4c123gh6pm.h"
 #include "ST7735.h"
+#include "loader.h"
 #include "ADC.h"
 #include "UART.h"
 #include <string.h> 
@@ -171,6 +172,8 @@ void LCD_test(uint8_t device, char * message)
 	ST7735_Message (device, 0, message, strlen(message));
 }
 void dummy(void){}; //dummy function for user task
+char processName [20];
+ELFEnv_t requiredStruct;
 void Interpreter(void)    // just a prototype, link to your interpreter
 {
 	//uint32_t stringSize;
@@ -189,6 +192,10 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 		switch(commandChosen)
 		{
 			case '0':
+				UART_OutString("Enter program name:");
+				OutCRLF();
+				UART_InString(processName,19);
+				exec_elf(processName, &requiredStruct);
 				break;
 			case '1':
 				break;

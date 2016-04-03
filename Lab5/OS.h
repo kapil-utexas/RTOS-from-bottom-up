@@ -26,7 +26,17 @@ struct TCB{
 	uint8_t needToWakeUp;
 	uint8_t priority; 
 	uint8_t blockedState; //flag
+	uint32_t processId;
 };
+
+struct PCB {
+	uint32_t processId;
+	void * codeSegment;
+	void *  dataSegment;
+	void(*startingAddress)(void);
+	uint8_t threadsAlive;
+};
+
 
 struct PeriodicThread{
 	uint32_t period;

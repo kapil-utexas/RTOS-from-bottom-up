@@ -12,22 +12,25 @@
 #include "PLL.h"
 #include "ST7735.h"
 #include "UART.h"
+#include "heap.h"
 #include "ADC.h"
 #include "Switch.h"
 #include "Lab2.h"
 #define MILLISECONDCOUNT 80000
 #define STACKSIZE 256
 #define NUMBEROFTHREADS 40
+#define NUMBEROFPROCESSES NUMBEROFTHREADS/10 // each process gets 5 threads hardcoded
 #define NUMBEROFPERIODICTHREADS 3
 void (*PeriodicTask)(void); //function pointer which takes void argument and returns void
  uint32_t timerCounter = 0;
  uint32_t timerMsCounter = 0;
 int32_t StartCritical(void);
 void EndCritical(int32_t primask);
-
+uint32_t currentProcess;
 struct TCB * RunPt; //scheduler pointer
 
 struct TCB * DeadPt; //dead threads pointer
+struct PCB * DeadProcessPt; //dead process pointer
 struct TCB * SleepPt; //sleeping threads pointer
 struct TCB * SchedulerPt; //sleeping threads pointer
 struct PeriodicThread periodicPool[NUMBEROFPERIODICTHREADS];
@@ -41,11 +44,12 @@ uint32_t deadPeriodicCount;
 uint32_t sleepCount;
 uint8_t switched = 0;
 struct TCB threadPool[NUMBEROFTHREADS];
+struct PCB processPool[NUMBEROFPROCESSES];
 void Timer2_Init(unsigned long value);
 static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime);
 struct TCB * nextBeforeSwitch;
 static void addDeadToScheduler(struct TCB ** from);
-
+static void addSleepToScheduler(struct TCB * thread);
 //OSasm definitions
 void OS_DisableInterrupts(void); // Disable interrupts
 void OS_EnableInterrupts(void);  // Enable interrupts
@@ -61,7 +65,7 @@ void OS_Init()
 	uint8_t counter = 0;
 	OS_DisableInterrupts();
 	PLL_Init(Bus80MHz);
-	
+	UART_Init();              					 // initialize UART
 	//ADC_Init(0);
 	//UART_Init();              					 // initialize UART
 	
@@ -78,8 +82,34 @@ void OS_Init()
 	}
 	periodicPool[NUMBEROFPERIODICTHREADS - 1].nextPeriodicThread = '\0'; 
 	
+	for(int i = 0; i< NUMBEROFTHREADS; i++)
+	{
+		threadPool[i].id = i;
+		if(threadPool[i].id >=0 && threadPool[i].id<10)
+		{
+			threadPool[i].processId = 0;
+		}
+		else if(threadPool[i].id>=10 && threadPool[i].id<20)
+		{
+			threadPool[i].processId = 1;
+		}
+		else if(threadPool[i].id>=20 && threadPool[i].id<30)
+		{
+			threadPool[i].processId = 2;
+		}
+		else 
+		{
+			threadPool[i].processId = 3;
+		}
+	}
+	for(int i =0; i<NUMBEROFPROCESSES; i++)
+	{
+		(processPool)->processId = 	i;
+	}
+	
 	
 	DeadPt = &threadPool[0]; //point to first element of not active threads 
+	DeadProcessPt = &processPool[1];
 	DeadPeriodicPt = &periodicPool[0];
 	deadCount = NUMBEROFTHREADS;
 	deadPeriodicCount = NUMBEROFPERIODICTHREADS;
@@ -508,6 +538,106 @@ static void addDeadToScheduler(struct TCB ** from)
 }
 
 
+static void addDeadNotFirstToScheduler(struct TCB * thread)
+{
+	struct TCB * prevToDelete = DeadPt;
+	(*thread).sleepState = 0;
+	(*thread).needToWakeUp = 0;
+	(*thread).active = 1;
+	if(prevToDelete == thread) //if its the first element
+	{
+		
+		if(SchedulerPt == '\0')
+		{
+			SchedulerPt = thread; 
+			DeadPt = DeadPt->nextTCB; //remove from sleep pool
+			(*SchedulerPt).nextTCB = SchedulerPt; //point to itself
+		}
+		else //scheduler not empty
+		{
+			struct TCB * finalNode = SchedulerPt; //sleeping threads pointer
+			while((*finalNode).nextTCB != (SchedulerPt))
+			{
+				finalNode = (*finalNode).nextTCB;
+			}
+			//now finalNode points to the last element of the scheduler that wraps around
+			struct TCB * temp = SchedulerPt; 
+			if((*thread).priority < (*SchedulerPt).priority) //gonna be added before first element
+			{
+				temp = (*thread).nextTCB; //save before removing which node should be the first after removal
+				(*thread).nextTCB = SchedulerPt; //point node to first element of where it will be added
+				SchedulerPt = (thread); //move pointer backwards (almost finishes addition, need to wrap)
+				(*finalNode).nextTCB = SchedulerPt; //wrap around to what we just added
+				DeadPt = temp; //move pointer to the right (finished deletion)
+				//need to context switch here
+				higherPriorityAdded = 1; //flag				
+			}
+			else
+			{
+				while( ((*temp).nextTCB != (SchedulerPt)) &&  ((*thread).priority >= (*(*temp).nextTCB).priority))
+				{
+					temp = (*temp).nextTCB;
+				}
+				//now we are at the priority where we want to add to
+				struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
+				(*temp).nextTCB = thread;
+				DeadPt = DeadPt->nextTCB; //remove from sleep pool
+				temp = (*temp).nextTCB; //temp now equals thread
+				(*temp).nextTCB = nextBeforeAdding;  //restore connection
+			}
+		}
+	}
+	else
+	{
+		while((*prevToDelete).nextTCB != thread)
+		{
+			prevToDelete = (*prevToDelete).nextTCB;
+		}
+		struct TCB * finalNode = SchedulerPt; 
+		while((*finalNode).nextTCB != (SchedulerPt))
+		{
+			finalNode = (*finalNode).nextTCB;
+		}
+		if(SchedulerPt == '\0') //if scheduler empty
+		{
+			struct TCB * nextBeforeDeletion = (*thread).nextTCB;; //active threads pointer
+			SchedulerPt = (*prevToDelete).nextTCB; //should add thread passed as parameter
+			(*prevToDelete).nextTCB = nextBeforeDeletion;
+			(*SchedulerPt).nextTCB = SchedulerPt;
+		}
+		else //scheduler not empty
+		{
+			struct TCB * temp = SchedulerPt; //active threads pointer
+			if((*thread).priority < (*SchedulerPt).priority) //will add at first element
+			{
+				temp = (*thread).nextTCB; //save before removing which node should be the first after removal
+				(*thread).nextTCB = SchedulerPt; //point node to first element of where it will be added
+				SchedulerPt = (thread); //move pointer backwards (almost finishes addition, need to wrap)
+				(*finalNode).nextTCB = SchedulerPt; //wrap around to what we just added
+				(*prevToDelete).nextTCB = temp;
+				//need to context switch here
+				higherPriorityAdded = 1; //flag					
+			}
+			else
+			{
+				while( ((*temp).nextTCB != (SchedulerPt)) &&  ((*thread).priority >= (*(*temp).nextTCB).priority))
+				{
+					temp = (*temp).nextTCB;
+				}
+				//now we are at the priority where we want to add to
+				struct TCB * nextBeforeDeletion = (*thread).nextTCB;; //active threads pointer
+				struct TCB * nextBeforeAdding = (*temp).nextTCB; //save before rerouting to restore at end
+				(*temp).nextTCB = thread; //temp points to where we want to add
+				(*prevToDelete).nextTCB = nextBeforeDeletion;
+				temp = (*temp).nextTCB; //temp now equals thread
+				(*temp).nextTCB = nextBeforeAdding;  //restore connection
+			}
+		}
+	}
+	schedulerCount++;
+	sleepCount--;
+	
+}
 
 //******** OS_AddThread *************** 
 // add a foregound thread to the scheduler
@@ -518,7 +648,7 @@ static void addDeadToScheduler(struct TCB ** from)
 // stack size must be divisable by 8 (aligned to double word boundary)
 // In Lab 2, you can ignore both the stackSize and priority fields
 // In Lab 3, you can ignore the stackSize fields
-uint8_t uniqueId=0; //make unique ids
+
 int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long priority)
 {
 	uint32_t status;
@@ -527,18 +657,45 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	if(DeadPt == '\0')
 	{
 		OS_DisableInterrupts();
-		while(1){}
+		while(1){};
 	}
-	(DeadPt)->id = uniqueId; //unique id
-	(DeadPt)->active = 1;
-	(DeadPt)->sleepState = 0; //flag
-	(DeadPt)->priority = priority; 
-	(DeadPt)->blockedState = 0; //flag
-	(DeadPt)->needToWakeUp = 0; //flag
-	SetInitialStack(DeadPt, stackSize);
-	(DeadPt)->stack[stackSize - 2] = (uint32_t)task; //push PC
-	uniqueId++;
-	addDeadToScheduler(&DeadPt);
+	struct TCB * DeadPoolTemp = DeadPt;
+	while(!(DeadPoolTemp->id <= currentProcess * 10 + 9))
+	{
+		if(DeadPoolTemp->id > currentProcess * 10 + 9)
+		{
+			while(1){};
+		}
+		DeadPoolTemp = DeadPoolTemp->nextTCB;
+	}
+	//now DeadPoolTemp points to what we want to add
+	
+	if((DeadPoolTemp)->id >=0 && (DeadPoolTemp)->id<10)
+	{
+		processPool[0].threadsAlive++;
+	}
+	else if((DeadPoolTemp)->id>=10 && (DeadPoolTemp)->id<20)
+	{
+		processPool[1].threadsAlive++;
+	}
+	else if((DeadPoolTemp)->id>=20 && (DeadPoolTemp)->id<30)
+	{
+		processPool[2].threadsAlive++;
+	}
+	else 
+	{
+		processPool[3].threadsAlive++;
+	}
+	
+	(DeadPoolTemp)->active = 1;
+	(DeadPoolTemp)->sleepState = 0; //flag
+	(DeadPoolTemp)->priority = priority; 
+	(DeadPoolTemp)->blockedState = 0; //flag
+	(DeadPoolTemp)->needToWakeUp = 0; //flag
+	SetInitialStack(DeadPoolTemp, stackSize);
+	(DeadPoolTemp)->stack[stackSize - 2] = (uint32_t)task; //push PC
+	addDeadNotFirstToScheduler(DeadPoolTemp);
+	//addDeadToScheduler(&DeadPoolTemp);
 	if(higherPriorityAdded == 1)
 	{
 		OS_Suspend();
@@ -547,6 +704,24 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	
 	return 1;
 }
+
+int  OS_AddProcess(void(*entry)(void), void *text, void *data, unsigned long stackSize, unsigned long priority)
+{
+	uint32_t status;
+	status = StartCritical();
+	//we will take the first thread from the dead pool
+	//allocate memory for one PCB
+	//Modify that PCB
+	(DeadProcessPt)->startingAddress = entry;
+	
+	(DeadProcessPt)->codeSegment= text;
+	(DeadProcessPt)->dataSegment= data; 
+	
+	 OS_AddThread(entry, stackSize, priority);
+	 EndCritical(status);
+	return 1;
+}
+
 
 // ******** OS_Suspend ************
 // suspend execution of currently running thread
@@ -645,6 +820,37 @@ static void threadRemover(struct TCB ** toAdd, unsigned long sleepTime)
 void OS_Kill(void)
 {
 	OS_DisableInterrupts();
+	uint32_t processLinkedTo;
+	if((RunPt)->id >=0 && (RunPt)->id<10)
+	{
+		processLinkedTo = 0;
+	}
+	else if((RunPt)->id>=10 && (RunPt)->id<20)
+	{
+		processLinkedTo = 1;
+	}
+	else if((RunPt)->id>=20 && (RunPt)->id<30)
+	{
+		processLinkedTo = 2;
+	}
+	else 
+	{
+		processLinkedTo = 3;
+	}
+	processPool[processLinkedTo].threadsAlive--;
+	if(processPool[processLinkedTo].threadsAlive == 0)
+	{
+		//dealloc memory
+		if( Heap_Free(processPool[processLinkedTo].codeSegment) != HEAP_OK)
+		{
+			while(1){};
+		}
+		if( Heap_Free(processPool[processLinkedTo].dataSegment) != HEAP_OK)
+		{
+			while(1){};
+		}
+		
+	}
 	threadRemover(&DeadPt, 0); //parameter 0 will be ignored
 	deadCount++;
 	switched = 1;

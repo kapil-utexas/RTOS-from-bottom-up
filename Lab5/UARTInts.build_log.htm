@@ -3,13 +3,20 @@
 <pre>
 <h1>µVision Build Log</h1>
 <h2>Project:</h2>
-C:\445M\Lab5\UARTInts.uvproj
-Project File Date:  02/25/2016
+C:\EE445M\Lab5\UARTInts.uvproj
+Project File Date:  04/01/2016
 
 <h2>Output:</h2>
 Rebuild target 'UARTInts'
 compiling PLL.c...
 compiling OS.c...
+OS.c(88): warning:  #186-D: pointless comparison of unsigned integer with zero
+                if(threadPool[i].id >=0 && threadPool[i].id<10)
+OS.c(673): warning:  #186-D: pointless comparison of unsigned integer with zero
+        if((DeadPoolTemp)->id >=0 && (DeadPoolTemp)->id<10)
+OS.c(824): warning:  #186-D: pointless comparison of unsigned integer with zero
+        if((RunPt)->id >=0 && (RunPt)->id<10)
+OS.c: 3 warnings, 0 errors
 compiling Lab2.c...
 assembling startup.s...
 assembling OSasm.s...
@@ -17,24 +24,115 @@ compiling ST7735.c...
 compiling Switch.c...
 compiling UART.c...
 assembling cr4_fft_64_stm32.s...
+compiling diskio.c...
+compiling ff.c...
+compiling heap.c...
+compiling loader.c...
+loader.c(620): warning:  #223-D: function "OS_AddProcess" declared implicitly
+      return LOADER_JUMP_TO(entry, text, data);
+loader.c(667): warning:  #111-D: statement is unreachable
+    return -1;
+loader.c(147): warning:  #177-D: function "swabo" was declared but never referenced
+  static uint32_t swabo(uint32_t hl) {
+loader.c(249): warning:  #177-D: function "readSegment" was declared but never referenced
+  static int readSegment(ELFExec_t *e, int n, Elf32_Phdr *h, size_t nlen) {
+loader.c(273): warning:  #177-D: function "typeStr" was declared but never referenced
+  static const char *typeStr(int symt) {
+loader.c: 5 warnings, 0 errors
 linking...
-Program Size: Code=7736 RO-data=2052 RW-data=308 ZI-data=24076  
-".\UARTInts.axf" - 0 Error(s), 0 Warning(s).
+Program Size: Code=20812 RO-data=2124 RW-data=348 ZI-data=25292  
+".\UARTInts.axf" - 0 Error(s), 8 Warning(s).
 </pre>
 </body>
 </html>
-king...
-Program Size: Code=7724 RO-data=2052 RW-data=312 ZI-data=24072  
-".\UARTInts.axf" - 0 Error(s), 1 Warning(s).
-ng OSasm.s...
-compiling ST7735.c...
-compiling Switch.c...
-compiling UART.c...
-assembling cr4_fft_64_stm32.s...
-linking...
-Program Size: Code=7724 RO-data=2052 RW-data=312 ZI-data=24072  
-".\UARTInts.axf" - 0 Error(s), 3 Warning(s).
-..
-linking...
-Program Size: Code=7816 RO-data=2052 RW-data=312 ZI-data=24072  
-".\UARTInts.axf" - 0 Error(s), 4 Warning(s).
+RTInts.axf" 
+Connecting: Mode=JTAG, Speed=1000000Hz
+Erase Done.
+Programming Done.
+Verify OK.
+
+".\UARTInts.axf" - 1 Error(s), 9 Warning(s).
+Target not created
+r:  #20: identifier "off_t" is undefined
+    off_t offset = e->symbolTableStrings + off;
+loader.c(129): error:  #20: identifier "off_t" is undefined
+    off_t old = LOADER_TELL(e->fd);
+loader.c(129): warning:  #223-D: function "lseek" declared implicitly
+    off_t old = LOADER_TELL(e->fd);
+loader.c(131): warning:  #223-D: function "read" declared implicitly
+      if (LOADER_READ(e->fd, buf, max) == 0)
+loader.c(172): warning:  #188-D: enumerated type mixed with another type
+    s->data = LOADER_ALIGN_ALLOC(h->sh_size, h->sh_addralign, h->sh_flags);
+loader.c(174): error:  #1085: Missing operand
+      ERR("    GET MEMORY fail");
+loader.c(177): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, h->sh_offset) != 0) {
+loader.c(178): error:  #1085: Missing operand
+      ERR("    seek fail");
+loader.c(183): warning:  #223-D: function "read" declared implicitly
+      if (LOADER_READ(e->fd, s->data, h->sh_size) != h->sh_size) {
+loader.c(184): error:  #1085: Missing operand
+        ERR("     read data fail");
+loader.c(196): error:  #20: identifier "off_t" is undefined
+    off_t offset = SECTION_OFFSET(e, n);
+loader.c(197): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, offset) != 0)
+loader.c(199): warning:  #223-D: function "read" declared implicitly
+    if (LOADER_READ(e->fd, h, sizeof(Elf32_Shdr)) != sizeof(Elf32_Shdr))
+loader.c(218): warning:  #188-D: enumerated type mixed with another type
+    s->data = LOADER_ALIGN_ALLOC(h->p_memsz, h->p_align, h->p_flags);
+loader.c(220): error:  #1085: Missing operand
+      ERR("    GET MEMORY fail");
+loader.c(223): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, h->p_offset) != 0) {
+loader.c(224): error:  #1085: Missing operand
+      ERR("    seek fail");
+loader.c(228): warning:  #223-D: function "read" declared implicitly
+    if (LOADER_READ(e->fd, s->data, h->p_filesz) != h->p_filesz) {
+loader.c(229): error:  #1085: Missing operand
+      ERR("     read data fail");
+loader.c(241): error:  #20: identifier "off_t" is undefined
+    off_t offset = SEGMENT_OFFSET(e, n);
+loader.c(242): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, offset) != 0)
+loader.c(244): warning:  #223-D: function "read" declared implicitly
+    if (LOADER_READ(e->fd, h, sizeof(Elf32_Phdr)) != sizeof(Elf32_Phdr))
+loader.c(258): error:  #20: identifier "off_t" is undefined
+    off_t old = LOADER_TELL(e->fd);
+loader.c(258): warning:  #223-D: function "lseek" declared implicitly
+    off_t old = LOADER_TELL(e->fd);
+loader.c(259): error:  #20: identifier "off_t" is undefined
+    off_t pos = e->symbolTable + n * sizeof(Elf32_Sym);
+loader.c(261): warning:  #223-D: function "read" declared implicitly
+      if (LOADER_READ(e->fd, sym, sizeof(Elf32_Sym)) == sizeof(Elf32_Sym)) {
+loader.c(362): error:  #20: identifier "off_t" is undefined
+  static int relocate(ELFExec_t *e, size_t relEntries, off_t relOfs,
+loader.c(367): warning:  #223-D: function "lseek" declared implicitly
+      (void) LOADER_SEEK_FROM_START(e->fd, relOfs);
+loader.c(370): warning:  #223-D: function "read" declared implicitly
+        if (LOADER_READ(e->fd, &rel, sizeof(rel)) == sizeof(rel)) {
+loader.c(453): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, ph->p_offset) != 0)
+loader.c(456): warning:  #223-D: function "read" declared implicitly
+      if (LOADER_READ(e->fd, &dyn, sizeof(Elf32_Dyn)) != sizeof(Elf32_Dyn))
+loader.c(484): error:  #1085: Missing operand
+        ERR("Error reading section");
+loader.c(505): error:  #1085: Missing operand
+        ERR("Error reading segment");
+loader.c(544): warning:  #223-D: function "read" declared implicitly
+    if (LOADER_READ(f, &h, sizeof(h)) != sizeof(h))
+loader.c(552): warning:  #223-D: function "lseek" declared implicitly
+    if (LOADER_SEEK_FROM_START(e->fd, h.e_shoff + h.e_shstrndx * sizeof(sH)) != 0)
+loader.c(554): warning:  #223-D: function "read" declared implicitly
+    if (LOADER_READ(e->fd, &sH, sizeof(Elf32_Shdr)) != sizeof(Elf32_Shdr))
+loader.c(578): warning:  #223-D: function "close" declared implicitly
+    LOADER_CLOSE(e->fd);
+loader.c(589): error:  #1085: Missing operand
+        ERR("Error reading section header");
+loader.c(617): error:  #20: identifier "off_t" is undefined
+  static int jumpTo(off_t ofs, void* text, void* data) {
+loader.c(620): error:  #120: return value type does not match the function type
+      return LOADER_JUMP_TO(entry, text, data);
+loader.c: 24 warnings, 30 errors
+".\UARTInts.axf" - 30 Error(s), 24 Warning(s).
+Target not created

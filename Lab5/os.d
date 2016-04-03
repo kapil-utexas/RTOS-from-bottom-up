@@ -5,6 +5,7 @@
 .\os.o: PLL.h
 .\os.o: ST7735.h
 .\os.o: UART.h
+.\os.o: heap.h
 .\os.o: ADC.h
 .\os.o: Switch.h
 .\os.o: Lab2.h

@@ -10,13 +10,14 @@
         THUMB
         REQUIRE8
         PRESERVE8
-
+		EXTERN  processPool
         EXTERN  RunPt            ; currently running thread
 		EXTERN  traverseSleep
 		EXTERN  switched
 		EXTERN  nextBeforeSwitch	
 		EXTERN  higherPriorityAdded
 		EXTERN  SchedulerPt
+		EXTERN currentProcess
         EXPORT  OS_DisableInterrupts
         EXPORT  OS_EnableInterrupts
         EXPORT  PendSV_Handler
@@ -90,9 +91,65 @@ Normal_Context_Switch
 	LDR SP, [R1] ;R1 points to the first element of the struct we want to switch to
 END_ROUTINE
 	POP {R4-R11} ;pop remainining registers
+	PUSH{R4-R8}
+	LDR R4, =RunPt
+	LDR R4,[R4]
+	LDR R5, [R4,#24] ;load Process ID 
+	PUSH{R6}
+	LDR R6, =currentProcess ;CHECK UIF WE NEED TO LDR AGAIN
+	STR R5, [R6]
+	POP{R6}
+	LDR R6, =processPool
+	LDR R6, [R6]
+	MOV R8, #17
+	MUL R7, R5, R8 ;17 is size of PCB
+	ADD R7, R7, #8 ;add offset for data segment
+	LDR R7, [R6,R7]
+	LDR R7,[R7]
+	MOV R9, R7 ;update R9
+	POP{R4-R8}
+	;need to set R9
 	CPSIE I
 	BX LR
 	
+	
+SVC_Handler
+	CPSID I
+	LDR R12, [SP,#24]
+	LDRH R12, [R12,#-2] 
+	BIC R12, #0xFF00
+	LDM SP, {R0-R3}
+	PUSH{LR}
+	CMP R12, #0
+	BEQ OS_Id
+	CMP R12, #1
+	BEQ OS_Kill
+	CMP R12, #2
+	BEQ OS_Sleep
+	CMP R12, #3
+	BEQ OS_Time
+	CMP R12, #4
+	BEQ OS_AddThread
+OS_Id
+	BL OS_Id
+	B Finished
+OS_Kill
+	BL OS_Kill	
+	B Finished
+OS_Sleep
+	BL OS_Sleep
+	B Finished	
+OS_Time
+	BL OS_Time
+	B Finished	
+OS_AddThread
+	BL OS_AddThread
+	B Finished
+Finished	
+	POP{LR}
+	CPSIE I
+	BX LR
+
 	
 SysTick_Handler                ; 1) Saves R0-R3,R12,LR,PC,PSR
 	CPSID I

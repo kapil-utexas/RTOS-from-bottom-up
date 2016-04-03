@@ -450,6 +450,26 @@
               <FileType>2</FileType>
               <FilePath>.\cr4_fft_64_stm32.s</FilePath>
             </File>
+            <File>
+              <FileName>diskio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\diskio.c</FilePath>
+            </File>
+            <File>
+              <FileName>ff.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\ff.c</FilePath>
+            </File>
+            <File>
+              <FileName>heap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\heap.c</FilePath>
+            </File>
+            <File>
+              <FileName>loader.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\loader.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
