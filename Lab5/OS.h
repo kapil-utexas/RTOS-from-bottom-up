@@ -35,6 +35,7 @@ struct PCB {
 	void *  dataSegment;
 	void(*startingAddress)(void);
 	uint8_t threadsAlive;
+	struct PCB *nextProcess;
 };
 
 

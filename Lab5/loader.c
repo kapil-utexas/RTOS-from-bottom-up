@@ -35,7 +35,7 @@
 #include "app/sysent.h"
 #endif
 #include "loader_config.h"
-
+#include "ST7735.h"
 #define IS_FLAGS_SET(v, m) (((v)&(m)) == (m))
 #define SECTION_OFFSET(e, n) (e->sectionTable + n * sizeof(Elf32_Shdr))
 #define SEGMENT_OFFSET(e, n) (e->programHeaderTable + n * sizeof(Elf32_Phdr))

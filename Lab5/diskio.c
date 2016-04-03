@@ -11,13 +11,16 @@
 /
 /-------------------------------------------------------------------------*/
 // converted to TM4C123
-// Jonathan Valvano, January 13, 2015
+// Feb 22, 2016
+// added PB0 as a choice for SDC CS
 #include <stdint.h>
 #include "../inc/tm4c123gh6pm.h"
 #include "integer.h"
 #include "diskio.h"
+#define SDC_CS_PB0 1
+#define SDC_CS_PD7 0
 
-// SDC CS is PD7 , TFT CS is PA3
+// SDC CS is PD7 or PB0 , TFT CS is PA3
 // to change CS to another GPIO, change SDC_CS and CS_Init
 // **********ST7735 TFT and SDC*******************
 // ST7735
@@ -25,7 +28,7 @@
 // 2  Vcc +3.3V
 // 3  PA7 TFT reset
 // 4  PA6 TFT data/command
-// 5  PD7 SDC_CS, active low to enable SDC
+// 5  PD7/PB0 SDC_CS, active low to enable SDC
 // 6  PA3 TFT_CS, active low to enable TFT
 // 7  PA5 MOSI SPI data from microcontroller to TFT or SDC
 // 8  PA2 Sclk SPI clock from microcontroller to TFT or SDC
@@ -41,7 +44,7 @@
 // DC   - PA6 TFT data/command
 // RES  - PA7 TFT reset
 // CS   - PA3 TFT_CS, active low to enable TFT
-// *CS  - PD7 SDC_CS, active low to enable SDC
+// *CS  - PD7/PB0 SDC_CS, active low to enable SDC
 // MISO - PA4 MISO SPI data from SDC to microcontroller
 // SDA  – (NC) I2C data for ADXL345 accelerometer
 // SCL  – (NC) I2C clock for ADXL345 accelerometer
@@ -49,8 +52,10 @@
 // Backlight + - Light, backlight connected to +3.3 V
 
 #define TFT_CS           (*((volatile uint32_t *)0x40004020))
-#define TFT_CS_LOW       0           // CS controlled by software
+#define TFT_CS_LOW       0           // CS controlled by software PA3
 #define TFT_CS_HIGH      0x08
+#if SDC_CS_PD7
+// PD7 output used for SDC CS
 #define SDC_CS           (*((volatile uint32_t *)0x40007200))
 #define SDC_CS_LOW       0           // CS controlled by software
 #define SDC_CS_HIGH      0x80
@@ -70,6 +75,26 @@ void CS_Init(void){
   GPIO_PORTD_AMSEL_R &= ~0x80;          // disable analog functionality on PD7
   SDC_CS = SDC_CS_HIGH;
 }
+#endif
+// PB0 output used for SDC CS
+#if SDC_CS_PB0
+#define SDC_CS           (*((volatile uint32_t *)0x40005004))
+#define SDC_CS_LOW       0           // CS controlled by software
+#define SDC_CS_HIGH      0x01
+void CS_Init(void){
+  SYSCTL_RCGCGPIO_R |= 0x02;            // activate clock for Port B
+  while((SYSCTL_PRGPIO_R&0x02) == 0){}; // allow time for clock to stabilize
+  GPIO_PORTB_DIR_R |= 0x01;             // make PB0 out
+  GPIO_PORTB_AFSEL_R &= ~0x01;          // disable alt funct on PB0
+  GPIO_PORTB_DR4R_R |= 0x01;            // 4mA drive on outputs
+  GPIO_PORTB_PUR_R |= 0x01;             // enable weak pullup on PB0
+  GPIO_PORTB_DEN_R |= 0x01;             // enable digital I/O on PB0
+                                        // configure PB0 as GPIO
+  GPIO_PORTB_PCTL_R = (GPIO_PORTB_PCTL_R&0xFFFFFFF0)+0x00000000;
+  GPIO_PORTB_AMSEL_R &= ~0x01;          // disable analog functionality on PB0
+  SDC_CS = SDC_CS_HIGH;
+}
+#endif
 //********SSI0_Init*****************
 // Initialize SSI0 interface to SDC
 // inputs:  clock divider to set clock frequency

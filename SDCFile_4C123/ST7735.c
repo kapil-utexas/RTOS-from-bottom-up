@@ -23,15 +23,17 @@
 // use of the SD card (CS on PD7) and ST7735 LCD (CS on PA3).
 //    16-bit color, 128 wide by 160 high LCD
 // Daniel Valvano
-// January 13, 2015
+// Feb 22, 2016
 // Augmented 7/17/2014 to have a simple graphics facility
 // Tested with LaunchPadDLL.dll simulator 9/2/2014
+// added PB0 as a choice for SDC CS
+
 
 /* This example accompanies the book
    "Embedded Systems: Real Time Interfacing to ARM Cortex M Microcontrollers",
-   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2014
+   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2016
 
- Copyright 2014 by Jonathan W. Valvano, valvano@mail.utexas.edu
+ Copyright 2016 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
  THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
@@ -51,7 +53,7 @@
 // SCK (pin 8) connected to PA2 (SSI0Clk)
 // MOSI (pin 7) connected to PA5 (SSI0Tx)
 // TFT_CS (pin 6) connected to PA3 (GPIO/SSI0Fss)
-// CARD_CS (pin 5) connected to PD7 (GPIO)
+// CARD_CS (pin 5) connected to PD7 or PB0 (GPIO)
 // Data/Command (pin 4) connected to PA6 (GPIO), high for data, low for command
 // RESET (pin 3) connected to PA7 (GPIO)
 // VCC (pin 2) connected to +3.3 V
@@ -66,7 +68,7 @@
 // DC   - PA6 TFT data/command
 // RES  - PA7 TFT reset
 // CS   - PA3 TFT_CS, active low to enable TFT
-// *CS  - PD7 SDC_CS, active low to enable SDC
+// *CS  - PD7 or PB0 SDC_CS, active low to enable SDC
 // MISO - PA4 MISO SPI data from SDC to microcontroller
 // SDA  – (NC) I2C data for ADXL345 accelerometer
 // SCL  – (NC) I2C clock for ADXL345 accelerometer

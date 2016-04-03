@@ -5,17 +5,17 @@
 // print some of the contents to the LCD, and write to a
 // file.
 // Daniel Valvano
-// January 13, 2015
+// Feb 22, 2016
 
 /* This example accompanies the book
    "Embedded Systems: Introduction to ARM Cortex M Microcontrollers",
-   ISBN: 978-1469998749, Jonathan Valvano, copyright (c) 2014
+   ISBN: 978-1469998749, Jonathan Valvano, copyright (c) 2016
    Program 4.6, Section 4.3
    "Embedded Systems: Real Time Interfacing to ARM Cortex M Microcontrollers",
-   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2014
+   ISBN: 978-1463590154, Jonathan Valvano, copyright (c) 2016
    Program 2.10, Figure 2.37
 
- Copyright 2014 by Jonathan W. Valvano, valvano@mail.utexas.edu
+ Copyright 2016 by Jonathan W. Valvano, valvano@mail.utexas.edu
     You may use, edit, run or distribute this file
     as long as the above copyright notice remains
  THIS SOFTWARE IS PROVIDED "AS IS".  NO WARRANTIES, WHETHER EXPRESS, IMPLIED
@@ -34,7 +34,7 @@
 // 2  Vcc +3.3V
 // 3  PA7 TFT reset
 // 4  PA6 TFT data/command
-// 5  PD7 SDC_CS, active low to enable SDC
+// 5  PD7/PB0 SDC_CS, active low to enable SDC
 // 6  PA3 TFT_CS, active low to enable TFT
 // 7  PA5 MOSI SPI data from microcontroller to TFT or SDC
 // 8  PA2 Sclk SPI clock from microcontroller to TFT or SDC
@@ -50,7 +50,7 @@
 // DC   - PA6 TFT data/command
 // RES  - PA7 TFT reset
 // CS   - PA3 TFT_CS, active low to enable TFT
-// *CS  - PD7 SDC_CS, active low to enable SDC
+// *CS  - PD7/PB0 SDC_CS, active low to enable SDC
 // MISO - PA4 MISO SPI data from SDC to microcontroller
 // SDA  – (NC) I2C data for ADXL345 accelerometer
 // SCL  – (NC) I2C clock for ADXL345 accelerometer
@@ -221,12 +221,12 @@ int main(void){
   ST7735_FillScreen(0);                 // set screen to black
   EnableInterrupts();
 //  SimpleUnformattedTest();              // comment this out if continuing to the advanced file system tests
-//  FileSystemTest();                     // comment this out if file system works
   MountFresult = f_mount(&g_sFatFs, "", 0);
   if(MountFresult){
     ST7735_DrawString(0, 0, "f_mount error", ST7735_Color565(0, 0, 255));
     while(1){};
   }
+  FileSystemTest();                     // comment this out if file system works
   // open the file to be read
   Fresult = f_open(&Handle, inFilename, FA_READ);
   if(Fresult == FR_OK){

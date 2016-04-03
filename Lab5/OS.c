@@ -102,9 +102,14 @@ void OS_Init()
 			threadPool[i].processId = 3;
 		}
 	}
+	for (counter = 1; counter<NUMBEROFPROCESSES - 1; counter++)
+	{
+		processPool[counter].nextProcess = &processPool[(counter + 1)]; //address of next TCB
+	}
+	processPool[NUMBEROFPROCESSES - 1].nextProcess = '\0'; 
 	for(int i =0; i<NUMBEROFPROCESSES; i++)
 	{
-		(processPool)->processId = 	i;
+		processPool[i].processId = 	i;
 	}
 	
 	
@@ -638,7 +643,7 @@ static void addDeadNotFirstToScheduler(struct TCB * thread)
 	sleepCount--;
 	
 }
-
+uint32_t justAddedId = 0;
 //******** OS_AddThread *************** 
 // add a foregound thread to the scheduler
 // Inputs: pointer to a void/void foreground task
@@ -653,19 +658,21 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 {
 	uint32_t status;
 	status = StartCritical();
+	uint32_t tempProcessRunning;
 	//we will take the first thread from the dead pool
 	if(DeadPt == '\0')
 	{
 		OS_DisableInterrupts();
 		while(1){};
 	}
-	struct TCB * DeadPoolTemp = DeadPt;
-	while(!(DeadPoolTemp->id <= currentProcess * 10 + 9))
+	if(justAddedId!=0)
 	{
-		if(DeadPoolTemp->id > currentProcess * 10 + 9)
-		{
-			while(1){};
-		}
+		tempProcessRunning = currentProcess;
+		currentProcess = justAddedId;
+	}
+	struct TCB * DeadPoolTemp = DeadPt;
+	while((DeadPoolTemp->id < currentProcess * 10) || (DeadPoolTemp->id > currentProcess * 10 + 9))
+	{
 		DeadPoolTemp = DeadPoolTemp->nextTCB;
 	}
 	//now DeadPoolTemp points to what we want to add
@@ -686,6 +693,12 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	{
 		processPool[3].threadsAlive++;
 	}
+
+	if(justAddedId!=0)
+	{
+		currentProcess = tempProcessRunning;
+		justAddedId = 0;
+	}
 	
 	(DeadPoolTemp)->active = 1;
 	(DeadPoolTemp)->sleepState = 0; //flag
@@ -705,6 +718,7 @@ int OS_AddThread(void(*task)(void), unsigned long stackSize, unsigned long prior
 	return 1;
 }
 
+
 int  OS_AddProcess(void(*entry)(void), void *text, void *data, unsigned long stackSize, unsigned long priority)
 {
 	uint32_t status;
@@ -712,11 +726,30 @@ int  OS_AddProcess(void(*entry)(void), void *text, void *data, unsigned long sta
 	//we will take the first thread from the dead pool
 	//allocate memory for one PCB
 	//Modify that PCB
-	(DeadProcessPt)->startingAddress = entry;
-	
-	(DeadProcessPt)->codeSegment= text;
-	(DeadProcessPt)->dataSegment= data; 
-	
+	struct PCB * temp = DeadProcessPt;
+	while(temp != '\0' && temp->threadsAlive > 0)
+	{
+		temp = temp->nextProcess;
+	}
+	if (temp == '\0')
+	{
+		
+		//dealloc memory
+		if( Heap_Free(text) != HEAP_OK)
+		{
+			while(1){};
+		}
+		if( Heap_Free(data) != HEAP_OK)
+		{
+			while(1){};
+		}
+		EndCritical(status);
+		return 0;
+	}
+	(temp)->startingAddress = entry;
+	(temp)->codeSegment= text;
+	(temp)->dataSegment= data; 
+	 justAddedId = temp->processId;
 	 OS_AddThread(entry, stackSize, priority);
 	 EndCritical(status);
 	return 1;
@@ -1307,4 +1340,14 @@ void OS_SW2Jitter(uint32_t period)
 		SW2JitterHistogram[jitter]++; 
 	}
 	LastTime = thisTime;
+}
+
+uint32_t getProcessIdOfRunningThread()
+{
+	return RunPt->processId;
+}
+
+void * getNewR9()
+{
+	return processPool[currentProcess].dataSegment;
 }

@@ -25,9 +25,12 @@
 #include "OS.h"
 #include "inc/tm4c123gh6pm.h"
 #include "ST7735.h"
+#include "diskio.h"
+#include "ff.h"
 #include "loader.h"
 #include "ADC.h"
 #include "UART.h"
+#include "heap.h"
 #include <string.h> 
 
 //*********Prototype for FFT in cr4_fft_64_stm32.s, STMicroelectronics
@@ -172,8 +175,15 @@ void LCD_test(uint8_t device, char * message)
 	ST7735_Message (device, 0, message, strlen(message));
 }
 void dummy(void){}; //dummy function for user task
+	
+	
 char processName [20];
-ELFEnv_t requiredStruct;
+static const ELFSymbol_t symtab[] = {
+{ "ST7735_Message", ST7735_Message }
+};
+
+static FATFS g_sFatFs;
+FRESULT MountFresult;
 void Interpreter(void)    // just a prototype, link to your interpreter
 {
 	//uint32_t stringSize;
@@ -192,10 +202,16 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 		switch(commandChosen)
 		{
 			case '0':
-				UART_OutString("Enter program name:");
-				OutCRLF();
-				UART_InString(processName,19);
-				exec_elf(processName, &requiredStruct);
+				MountFresult = f_mount(&g_sFatFs, "", 0);
+				if(MountFresult){
+					//ST7735_DrawString(0, 0, "f_mount error", ST7735_Color565(0, 0, 255));
+					while(1){};
+				}
+				//UART_OutString("Enter program name:");
+				//OutCRLF();
+				//UART_InString(processName,19);
+				ELFEnv_t env = { symtab, 1 };
+				exec_elf("Proc.axf", &env);
 				break;
 			case '1':
 				break;
@@ -259,11 +275,11 @@ int main(void){
   DataLost = 0;        // lost data between producer and consumer
   NumSamples = 0;
   MaxJitter = 0;       // in 1us units
-
+	Heap_Init();
 //********initialize communication channels
   OS_MailBox_Init();
   OS_Fifo_Init(32);    // ***note*** 4 is not big enough*****
-	//ST7735_InitR(INITR_REDTAB);				   // initialize LCD
+	ST7735_InitR(INITR_REDTAB);				   // initialize LCD
 	UART_Init();              					 // initialize UART
 //*******attach background tasks***********
   OS_AddSW1Task(&SW1Push,2);

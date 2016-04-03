@@ -10,20 +10,27 @@
         THUMB
         REQUIRE8
         PRESERVE8
+		EXTERN  OS_Id
+		EXTERN  OS_Kill
+		EXTERN  OS_Sleep
+		EXTERN  OS_Time
+		EXTERN  OS_AddThread
 		EXTERN  processPool
         EXTERN  RunPt            ; currently running thread
 		EXTERN  traverseSleep
 		EXTERN  switched
 		EXTERN  nextBeforeSwitch	
+		EXTERN  getProcessIdOfRunningThread
 		EXTERN  higherPriorityAdded
 		EXTERN  SchedulerPt
+		EXTERN  getNewR9
 		EXTERN currentProcess
         EXPORT  OS_DisableInterrupts
         EXPORT  OS_EnableInterrupts
         EXPORT  PendSV_Handler
 		EXPORT  SysTick_Handler
 		EXPORT  StartOS
-
+		EXPORT SVC_Handler
 			
 			
 
@@ -94,19 +101,26 @@ END_ROUTINE
 	PUSH{R4-R8}
 	LDR R4, =RunPt
 	LDR R4,[R4]
-	LDR R5, [R4,#24] ;load Process ID 
+	;LDR R5, [R4,#540] ;load Process ID 
+	PUSH {R0, LR}
+	BL getProcessIdOfRunningThread
+	MOV R5, R0
+	POP {R0,LR}
 	PUSH{R6}
 	LDR R6, =currentProcess ;CHECK UIF WE NEED TO LDR AGAIN
 	STR R5, [R6]
 	POP{R6}
-	LDR R6, =processPool
-	LDR R6, [R6]
-	MOV R8, #17
-	MUL R7, R5, R8 ;17 is size of PCB
-	ADD R7, R7, #8 ;add offset for data segment
-	LDR R7, [R6,R7]
-	LDR R7,[R7]
-	MOV R9, R7 ;update R9
+	;LDR R6, =processPool
+	;LDR R6, [R6]
+	;MOV R8, #17
+	;MUL R7, R5, R8 ;17 is size of PCB
+	;ADD R7, R7, #8 ;add offset for data segment
+	;LDR R7, [R6,R7]
+	;LDR R7,[R7]
+	PUSH{R0,LR}
+	BL getNewR9
+	MOV R9, R0 ;update R9
+	POP{R0,LR}
 	POP{R4-R8}
 	;need to set R9
 	CPSIE I
@@ -121,32 +135,33 @@ SVC_Handler
 	LDM SP, {R0-R3}
 	PUSH{LR}
 	CMP R12, #0
-	BEQ OS_Id
+	BEQ OS_Id_Handler
 	CMP R12, #1
-	BEQ OS_Kill
+	BEQ OS_Kill_Handler
 	CMP R12, #2
-	BEQ OS_Sleep
+	BEQ OS_Sleep_Handler
 	CMP R12, #3
-	BEQ OS_Time
+	BEQ OS_Time_Handler
 	CMP R12, #4
-	BEQ OS_AddThread
-OS_Id
+	BEQ OS_AddThread_Handler
+OS_Id_Handler
 	BL OS_Id
 	B Finished
-OS_Kill
+OS_Kill_Handler
 	BL OS_Kill	
 	B Finished
-OS_Sleep
+OS_Sleep_Handler
 	BL OS_Sleep
 	B Finished	
-OS_Time
+OS_Time_Handler
 	BL OS_Time
 	B Finished	
-OS_AddThread
+OS_AddThread_Handler
 	BL OS_AddThread
 	B Finished
 Finished	
 	POP{LR}
+	STR R0,[SP]
 	CPSIE I
 	BX LR
 
