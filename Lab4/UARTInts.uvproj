@@ -426,11 +426,6 @@
               <FilePath>.\Switch.c</FilePath>
             </File>
             <File>
-              <FileName>ST7735.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\ST7735.c</FilePath>
-            </File>
-            <File>
               <FileName>UART.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\UART.c</FilePath>
@@ -454,6 +449,11 @@
               <FileName>ADC.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\ADC.c</FilePath>
+            </File>
+            <File>
+              <FileName>efile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\efile.c</FilePath>
             </File>
           </Files>
         </Group>

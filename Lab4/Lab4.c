@@ -124,6 +124,13 @@ void OutCRLF(void){
   UART_OutChar(CR);
   UART_OutChar(LF);
 }
+
+char interpreterInputString[20];
+void diskError(char* errtype, unsigned long n){
+  UART_OutString(errtype);
+  UART_OutUDec(n);
+  OS_Kill();
+}
 void Interpreter(void)    // just a prototype, link to your interpreter
 {
 	uint32_t adcVoltage;
@@ -132,20 +139,33 @@ void Interpreter(void)    // just a prototype, link to your interpreter
 	UART_OutString("Input Command: ");
 	while(1){
 		OutCRLF();
-		//UART_OutString("Commands: 0 - ADC, 1 - LCD, 2 - Time");
+		//UART_OutString("Commands: 0 - Create, 1 - PrintDirectory, 2 - Delete");
 		OutCRLF();
 		commandChosen = UART_InChar();
 		switch(commandChosen)
 		{
 			case '0':
 				OutCRLF();
-				UART_OutString("ADC Voltage = ");
-				//ADC_Open(4);
-				adcVoltage = (ADC_In() *3300) / 4095; //convert to mV
-				UART_OutUDec(adcVoltage);
+				UART_OutString("Enter file name to create");
+			  UART_InString(interpreterInputString,7);
+				if(eFile_Create(interpreterInputString))     diskError("eFile_Create",0);
+				OutCRLF();
+				UART_OutString("File created");
 				OutCRLF();
 				break;
 			case '1':
+				OutCRLF();
+				eFile_Directory(&UART_OutChar);
+				OutCRLF();
+				break;
+			case '2':
+				OutCRLF();
+				UART_OutString("Enter file name to delete");
+			  UART_InString(interpreterInputString,7);
+				if(eFile_Delete(interpreterInputString))     diskError("eFile_Delete",0);
+				OutCRLF();
+				UART_OutString("File deleted");
+				OutCRLF();
 				break;
 			default:
 				UART_OutString("Incorrect command!");
@@ -194,11 +214,7 @@ int realmain(void){        // lab 5 real main
 //*****************test programs*************************
 unsigned char buffer[512];
 #define MAXBLOCKS 100
-void diskError(char* errtype, unsigned long n){
-  UART_OutString(errtype);
-  UART_OutUDec(n);
-  OS_Kill();
-}
+
 void TestDisk(void){  DSTATUS result;  unsigned short block;  int i; unsigned long n;
   // simple test of eDisk
   //printf("\n\rEE345M/EE380L, Lab 5 eDisk test\n\r");
@@ -334,10 +350,12 @@ int main(void){
 
 //*******attach background tasks***********
   OS_AddPeriodicThread(&disk_timerproc,20,0);   // time out routines for disk
-  
+  if(eFile_Init())              diskError("eFile_Init",0); 
+	UART_OutString("Initialized\n\r");
+  if(eFile_Format())            diskError("eFile_Format",0); 
   NumCreated = 0 ;
 // create initial foreground threads
-  NumCreated += OS_AddThread(&TestFile,128,1);  
+  NumCreated += OS_AddThread(&Interpreter,128,1);  
   NumCreated += OS_AddThread(&IdleTask,128,3); 
  
   OS_Launch(10*TIME_1MS); // doesn't return, interrupts enabled in here
